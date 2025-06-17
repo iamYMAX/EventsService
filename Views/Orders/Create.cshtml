@@ -42,9 +42,7 @@
 
             <div class="form-group mb-3">
                 <h5>Order Items</h5>
-                <div id="orderItemsContainer">
-                    @* Dynamic rows will be injected here by JavaScript *@
-                </div>
+                <div id="orderItemsContainer"></div>
                 <button type="button" id="addProductItem" class="btn btn-info btn-sm mt-2">Add Product</button>
                 <span asp-validation-for="OrderItems" class="text-danger d-block mt-1"></span>
             </div>
@@ -62,26 +60,25 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function () {
-            // Ensure productDetailsForJs is correctly initialized.
-            // The null check in the original file was good.
+            let initialItemCountGlobal = 0; // Declare at the top of the scope
+
             const productDetailsForJs = @Html.Raw(Json.Serialize(Model.ProductDetailsForJs ?? new List<EventsService.ViewModels.ProductInfoForJs>()));
-            let itemIndex = 0; // Used for unique naming if not re-indexing. Re-indexing is better.
+            // itemIndex is not used due to re-indexing logic, safe to remove if not used elsewhere.
 
             function reindexOrderItems() {
                 $('#orderItemsContainer .order-item-row').each(function(idx, row) {
                     $(row).find('.product-select').attr('name', `OrderItems[${idx}].ProductId`);
                     $(row).find('.quantity-input').attr('name', `OrderItems[${idx}].Quantity`);
-                    // Update validation message 'for' attributes if they are dynamically generated (not shown in current snippet but good practice)
                 });
             }
 
             function updatePriceForRow(selectElement) {
                 const selectedProductId = $(selectElement).val();
                 const priceInput = $(selectElement).closest('.order-item-row').find('.product-price-display');
-                const selectedProductDetail = productDetailsForJs.find(p => p.value == selectedProductId); // Ensure 'value' matches casing from ProductInfoForJs serialization
+                const selectedProductDetail = productDetailsForJs.find(p => p.value == selectedProductId);
 
                 if (selectedProductDetail) {
-                    priceInput.val(selectedProductDetail.price.toFixed(2)); // Ensure 'price' matches casing
+                    priceInput.val(selectedProductDetail.price.toFixed(2));
                 } else {
                     priceInput.val('');
                 }
@@ -95,8 +92,7 @@
                 let productOptions = '<option value="">-- Select Product --</option>';
                 if (productDetailsForJs && productDetailsForJs.length > 0) {
                     productDetailsForJs.forEach(p => {
-                        // Ensure p.value and p.text match the casing from ProductInfoForJs (Value, Text) after serialization
-                        productOptions += `<option value="${p.value}" ${p.value == productId ? "selected" : ""}>${p.text}</option>`;
+                        productOptions += `<option value="${p.value}" ${p.value == productId.toString() ? "selected" : ""}>${p.text}</option>`; // Ensure productId is string for comparison
                     });
                 } else {
                     productOptions = '<option value="">-- No products available --</option>';
@@ -104,53 +100,30 @@
 
                 const rowHtml = `
                     <div class="order-item-row row mb-2 align-items-center">
-                        <div class="col-md-5">
-                            <label class="form-label visually-hidden">Product</label>
-                            <select name="OrderItems[${currentItemCount}].ProductId" class="form-select product-select" required>${productOptions}</select>
-                        </div>
-                        <div class="col-md-3">
-                             <label class="form-label visually-hidden">Quantity</label>
-                            <input type="number" name="OrderItems[${currentItemCount}].Quantity" value="${quantity}" class="form-control quantity-input" min="1" required />
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label visually-hidden">Price</label>
-                            <input type="text" class="form-control product-price-display" readonly disabled placeholder="Price"/>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="button" class="btn btn-danger btn-sm remove-item w-100">Remove</button>
-                        </div>
+                        <div class="col-md-5"><select name="OrderItems[${currentItemCount}].ProductId" class="form-select product-select" required>${productOptions}</select></div>
+                        <div class="col-md-3"><input type="number" name="OrderItems[${currentItemCount}].Quantity" value="${quantity}" class="form-control quantity-input" min="1" required /></div>
+                        <div class="col-md-2"><input type="text" class="form-control product-price-display" readonly disabled placeholder="Price"/></div>
+                        <div class="col-md-2"><button type="button" class="btn btn-danger btn-sm remove-item w-100">Remove</button></div>
                     </div>`;
                 $('#orderItemsContainer').append(rowHtml);
                 updatePriceForRow($('#orderItemsContainer .order-item-row').last().find('.product-select'));
             }
 
-            $('#addProductItem').click(function () {
-                addOrderItemRow();
-            });
+            $('#addProductItem').click(function () { addOrderItemRow(); });
+            $('#orderItemsContainer').on('click', '.remove-item', function () { $(this).closest('.order-item-row').remove(); reindexOrderItems(); });
+            $('#orderItemsContainer').on('change', '.product-select', function () { updatePriceForRow(this); });
 
-            $('#orderItemsContainer').on('click', '.remove-item', function () {
-                $(this).closest('.order-item-row').remove();
-                reindexOrderItems(); // Call re-index after removal
-            });
-
-            $('#orderItemsContainer').on('change', '.product-select', function () {
-                updatePriceForRow(this);
-            });
-
-            // Initial population of rows if Model.OrderItems exists (e.g., validation failed, page reloaded)
-            let initialItemCountGlobal = 0; // Renamed to avoid any conflict, ensure it's accessible
             @if (Model.OrderItems != null && Model.OrderItems.Any())
             {
                 @foreach (var item in Model.OrderItems)
                 {
-                    @:addOrderItemRow({ ProductId: "@item.ProductId.ToString()", Quantity: @item.Quantity });
+                    // ProductId is int, value in option is string. Ensure comparison is consistent.
+                    @:addOrderItemRow({ ProductId: @item.ProductId, Quantity: @item.Quantity });
                     initialItemCountGlobal++;
                 }
             }
 
-            if (initialItemCountGlobal === 0) {
-                addOrderItemRow(); // Add one empty row by default for new orders
-            }
+            if (initialItemCountGlobal === 0) { addOrderItemRow(); }
         });
     </script>
 }

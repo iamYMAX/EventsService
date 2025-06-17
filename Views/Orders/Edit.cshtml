@@ -11,49 +11,21 @@
     <div class="col-md-8">
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="Id" /> <!-- Important: Order ID -->
+            <input type="hidden" asp-for="Id" />
 
-            <div class="form-group mb-3">
-                <label asp-for="ClientId" class="control-label"></label>
-                <select asp-for="ClientId" class="form-select" asp-items="Model.Clients">
-                    <option value="">-- Выберите клиента --</option>
-                </select>
-                <span asp-validation-for="ClientId" class="text-danger"></span>
-            </div>
-
-            <div class="form-group mb-3">
-                <label asp-for="SalesRepresentativeId" class="control-label"></label>
-                <select asp-for="SalesRepresentativeId" class="form-select" asp-items="Model.SalesRepresentatives">
-                    <option value="">-- Не назначать --</option>
-                </select>
-                <span asp-validation-for="SalesRepresentativeId" class="text-danger"></span>
-            </div>
-
-            <div class="form-group mb-3">
-                <label asp-for="OrderDate" class="control-label"></label>
-                <input asp-for="OrderDate" class="form-control" type="datetime-local" />
-                <span asp-validation-for="OrderDate" class="text-danger"></span>
-            </div>
-
-            <div class="form-group mb-3">
-                <label asp-for="Status" class="control-label"></label>
-                <select asp-for="Status" class="form-select" asp-items="Model.Statuses"></select>
-                <span asp-validation-for="Status" class="text-danger"></span>
-            </div>
+            <div class="form-group mb-3"><label asp-for="ClientId" class="control-label"></label><select asp-for="ClientId" class="form-select" asp-items="Model.Clients"><option value="">-- Выберите клиента --</option></select><span asp-validation-for="ClientId" class="text-danger"></span></div>
+            <div class="form-group mb-3"><label asp-for="SalesRepresentativeId" class="control-label"></label><select asp-for="SalesRepresentativeId" class="form-select" asp-items="Model.SalesRepresentatives"><option value="">-- Не назначать --</option></select><span asp-validation-for="SalesRepresentativeId" class="text-danger"></span></div>
+            <div class="form-group mb-3"><label asp-for="OrderDate" class="control-label"></label><input asp-for="OrderDate" class="form-control" type="datetime-local" /><span asp-validation-for="OrderDate" class="text-danger"></span></div>
+            <div class="form-group mb-3"><label asp-for="Status" class="control-label"></label><select asp-for="Status" class="form-select" asp-items="Model.Statuses"></select><span asp-validation-for="Status" class="text-danger"></span></div>
 
             <div class="form-group mb-3">
                 <h5>Order Items</h5>
-                <div id="orderItemsContainer">
-                    @* Dynamic rows will be injected here by JavaScript *@
-                </div>
+                <div id="orderItemsContainer"></div>
                 <button type="button" id="addProductItem" class="btn btn-info btn-sm mt-2">Add Product</button>
                 <span asp-validation-for="OrderItems" class="text-danger d-block mt-1"></span>
             </div>
 
-            <div class="form-group mt-4">
-                <input type="submit" value="Сохранить изменения" class="btn btn-success me-2" />
-                <a asp-action="Index" class="btn btn-secondary">Отмена</a>
-            </div>
+            <div class="form-group mt-4"><input type="submit" value="Сохранить изменения" class="btn btn-success me-2" /><a asp-action="Index" class="btn btn-secondary">Отмена</a></div>
         </form>
     </div>
 </div>
@@ -63,7 +35,10 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function () {
+            let initialItemCount = 0; // Declare at the top of the scope
+
             const productDetailsForJs = @Html.Raw(Json.Serialize(Model.ProductDetailsForJs ?? new List<EventsService.ViewModels.ProductInfoForJs>()));
+            // itemIndex is not used due to re-indexing logic.
 
             function reindexOrderItems() {
                 $('#orderItemsContainer .order-item-row').each(function(idx, row) {
@@ -86,15 +61,14 @@
 
             function addOrderItemRow(item) {
                 const currentItemCount = $('#orderItemsContainer .order-item-row').length;
-                const productId = item ? item.ProductId : ""; // ProductId from item will be int, ensure comparison with p.value (string) is ok
+                const productId = item ? item.ProductId : ""; // ProductId from item will be int
                 const quantity = item ? item.Quantity : 1;
 
                 let productOptions = '<option value="">-- Select Product --</option>';
                 if (productDetailsForJs && productDetailsForJs.length > 0) {
                     productDetailsForJs.forEach(p => {
-                        // p.value is string (from ProductInfoForJs.Value which is p.Id.ToString())
-                        // productId from item is int. Convert for comparison.
-                        productOptions += `<option value="${p.value}" ${p.value == String(productId) ? "selected" : ""}>${p.text}</option>`;
+                        // p.value is string (from Product.Id.ToString())
+                        productOptions += `<option value="${p.value}" ${p.value == productId.toString() ? "selected" : ""}>${p.text}</option>`; // Ensure productId is string for comparison
                     });
                 } else {
                     productOptions = '<option value="">-- No products available --</option>';
@@ -102,58 +76,30 @@
 
                 const rowHtml = `
                     <div class="order-item-row row mb-2 align-items-center">
-                        <div class="col-md-5">
-                            <label class="form-label visually-hidden">Product</label>
-                            <select name="OrderItems[${currentItemCount}].ProductId" class="form-select product-select" required>${productOptions}</select>
-                        </div>
-                        <div class="col-md-3">
-                             <label class="form-label visually-hidden">Quantity</label>
-                            <input type="number" name="OrderItems[${currentItemCount}].Quantity" value="${quantity}" class="form-control quantity-input" min="1" required />
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label visually-hidden">Price</label>
-                            <input type="text" class="form-control product-price-display" readonly disabled placeholder="Price"/>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="button" class="btn btn-danger btn-sm remove-item w-100">Remove</button>
-                        </div>
+                        <div class="col-md-5"><select name="OrderItems[${currentItemCount}].ProductId" class="form-select product-select" required>${productOptions}</select></div>
+                        <div class="col-md-3"><input type="number" name="OrderItems[${currentItemCount}].Quantity" value="${quantity}" class="form-control quantity-input" min="1" required /></div>
+                        <div class="col-md-2"><input type="text" class="form-control product-price-display" readonly disabled placeholder="Price"/></div>
+                        <div class="col-md-2"><button type="button" class="btn btn-danger btn-sm remove-item w-100">Remove</button></div>
                     </div>`;
                 $('#orderItemsContainer').append(rowHtml);
                 updatePriceForRow($('#orderItemsContainer .order-item-row').last().find('.product-select'));
             }
 
-            $('#addProductItem').click(function () {
-                addOrderItemRow();
-            });
+            $('#addProductItem').click(function () { addOrderItemRow(); });
+            $('#orderItemsContainer').on('click', '.remove-item', function () { $(this).closest('.order-item-row').remove(); reindexOrderItems(); });
+            $('#orderItemsContainer').on('change', '.product-select', function () { updatePriceForRow(this); });
 
-            $('#orderItemsContainer').on('click', '.remove-item', function () {
-                $(this).closest('.order-item-row').remove();
-                reindexOrderItems();
-            });
-
-            $('#orderItemsContainer').on('change', '.product-select', function () {
-                updatePriceForRow(this);
-            });
-
-            // Populate existing order items for editing
-            let initialItemCount = 0;
             @if (Model.OrderItems != null && Model.OrderItems.Any())
             {
                 @foreach (var item in Model.OrderItems)
                 {
-                    // Ensure ProductId is passed as string to match option values if they are strings
-                    @:addOrderItemRow({ ProductId: @item.ProductId, Quantity: @item.Quantity }); // Pass ProductId as number, it will be converted to string for comparison in addOrderItemRow
+                    // ProductId is int, pass as is. Comparison logic in addOrderItemRow handles it.
+                    @:addOrderItemRow({ ProductId: @item.ProductId, Quantity: @item.Quantity });
                     initialItemCount++;
                 }
             }
 
-            // If it's an edit form and there were no items (e.g. all removed previously, though MinLength should prevent this on save)
-            // or if somehow OrderItems is null/empty on an existing order, add one blank row.
-            // For a 'Create' form, this is usually desired. For 'Edit', it depends on business rules.
-            // Let's keep it consistent with Create: if no items, add one blank row.
-            if (initialItemCount === 0) {
-                addOrderItemRow();
-            }
+            if (initialItemCount === 0) { addOrderItemRow(); }
         });
     </script>
 }

@@ -16,7 +16,7 @@ namespace EventsService.ViewModels
         public SelectList? Clients { get; set; }
 
         [Display(Name = "Ответственный сотрудник (Торговый представитель)")]
-        public int? SalesRepresentativeId { get; set; }
+        public string? SalesRepresentativeId { get; set; } // Changed from int? to string?
         public SelectList? SalesRepresentatives { get; set; }
 
         [Required(ErrorMessage = "Дата заявки обязательна.")]
