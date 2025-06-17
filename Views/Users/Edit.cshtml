@@ -1,0 +1,66 @@
+@model EventsService.ViewModels.EditUserViewModel
+
+@{
+    ViewData["Title"] = "Редактировать пользователя";
+}
+
+<h1>@ViewData["Title"]: @Model.UserName</h1>
+<hr />
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="Edit">
+            <div asp-validation-summary="All" class="text-danger"></div> @* Changed to All to see all errors, including role assignment issues *@
+            <input type="hidden" asp-for="Id" />
+
+            <div class="form-group mb-3">
+                <label asp-for="UserName" class="control-label"></label>
+                <input asp-for="UserName" class="form-control" />
+                <span asp-validation-for="UserName" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Email" class="control-label"></label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="SelectedRoleIds" class="control-label"></label>
+                @if (Model.AllRoles != null && Model.AllRoles.Any())
+                {
+                    <select asp-for="SelectedRoleIds" class="form-select" asp-items="Model.AllRoles" multiple="multiple" size="5"></select>
+                    <small class="form-text text-muted">Удерживайте Ctrl (или Cmd на Mac), чтобы выбрать несколько ролей. Текущие роли: @(Model.CurrentRoles != null && Model.CurrentRoles.Any() ? string.Join(", ", Model.CurrentRoles) : "Нет")</small>
+                }
+                else
+                {
+                    <p class="text-warning">Нет доступных ролей для назначения/изменения.</p>
+                    <small class="form-text text-muted">Текущие роли: @(Model.CurrentRoles != null && Model.CurrentRoles.Any() ? string.Join(", ", Model.CurrentRoles) : "Нет")</small>
+                }
+                <span asp-validation-for="SelectedRoleIds" class="text-danger"></span>
+            </div>
+
+            @* Password change section (optional, can be separate)
+            <h5 class="mt-4">Изменить пароль (необязательно)</h5>
+            <div class="form-group mb-3">
+                <label asp-for="NewPassword" class="control-label"></label>
+                <input asp-for="NewPassword" class="form-control" />
+                <span asp-validation-for="NewPassword" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="ConfirmNewPassword" class="control-label"></label>
+                <input asp-for="ConfirmNewPassword" class="form-control" />
+                <span asp-validation-for="ConfirmNewPassword" class="text-danger"></span>
+            </div>
+            *@
+
+            <div class="form-group mt-4">
+                <input type="submit" value="Сохранить изменения" class="btn btn-success me-2" />
+                <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
