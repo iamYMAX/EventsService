@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
+using System.IO;
+using Microsoft.AspNetCore.Http;
 
 namespace EventsService.Controllers
 {
@@ -51,10 +53,43 @@ namespace EventsService.Controllers
         // POST: Products/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Description,Price")] Product product)
+        public async Task<IActionResult> Create([Bind("Name,Description,Price,StockQuantity,PackagingDetails")] Product product, IFormFile? productImage)
         {
             if (ModelState.IsValid)
             {
+                if (productImage != null && productImage.Length > 0)
+                {
+                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                    var extension = Path.GetExtension(productImage.FileName).ToLowerInvariant();
+                    if (!allowedExtensions.Contains(extension))
+                    {
+                        ModelState.AddModelError("productImage", "Invalid image file type. Allowed types: .jpg, .jpeg, .png, .gif");
+                        return View(product);
+                    }
+
+                    // Max file size (e.g., 5MB) - optional
+                    // if (productImage.Length > 5 * 1024 * 1024)
+                    // {
+                    //     ModelState.AddModelError("productImage", "Image file size exceeds the limit (5MB).");
+                    //     return View(product);
+                    // }
+
+                    var uploadsFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/products");
+                    if (!Directory.Exists(uploadsFolderPath))
+                    {
+                        Directory.CreateDirectory(uploadsFolderPath);
+                    }
+
+                    var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(productImage.FileName);
+                    var filePath = Path.Combine(uploadsFolderPath, uniqueFileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await productImage.CopyToAsync(stream);
+                    }
+                    product.ImageUrl = "/uploads/products/" + uniqueFileName;
+                }
+
                 _context.Add(product);
                 await _context.SaveChangesAsync();
                 // TempData["SuccessMessage"] = "Товар/услуга успешно создан(а).";
@@ -82,7 +117,7 @@ namespace EventsService.Controllers
         // POST: Products/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Description,Price")] Product product)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Description,Price,StockQuantity,PackagingDetails,ImageUrl")] Product product, IFormFile? productImage)
         {
             if (id != product.Id)
             {
@@ -93,6 +128,43 @@ namespace EventsService.Controllers
             {
                 try
                 {
+                    if (productImage != null && productImage.Length > 0)
+                    {
+                        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                        var extension = Path.GetExtension(productImage.FileName).ToLowerInvariant();
+                        if (!allowedExtensions.Contains(extension))
+                        {
+                            ModelState.AddModelError("productImage", "Invalid image file type. Allowed types: .jpg, .jpeg, .png, .gif");
+                            return View(product);
+                        }
+
+                        // Delete old image if it exists and a new one is uploaded
+                        if (!string.IsNullOrEmpty(product.ImageUrl))
+                        {
+                            var oldImagePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", product.ImageUrl.TrimStart('/'));
+                            if (System.IO.File.Exists(oldImagePath))
+                            {
+                                System.IO.File.Delete(oldImagePath);
+                            }
+                        }
+
+                        var uploadsFolderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/uploads/products");
+                        if (!Directory.Exists(uploadsFolderPath))
+                        {
+                            Directory.CreateDirectory(uploadsFolderPath);
+                        }
+
+                        var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(productImage.FileName);
+                        var filePath = Path.Combine(uploadsFolderPath, uniqueFileName);
+
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await productImage.CopyToAsync(stream);
+                        }
+                        product.ImageUrl = "/uploads/products/" + uniqueFileName;
+                    }
+                    // If no new image is uploaded, product.ImageUrl (bound from form) remains unchanged.
+
                     _context.Update(product);
                     await _context.SaveChangesAsync();
                     // TempData["SuccessMessage"] = "Товар/услуга успешно обновлен(а).";

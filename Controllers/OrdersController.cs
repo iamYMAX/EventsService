@@ -89,7 +89,7 @@ namespace EventsService.Controllers
 
 
         // GET: Orders/Create
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin,Manager,SalesRepresentative")]
         public async Task<IActionResult> Create()
         {
             var salesRepUsers = await _userManager.GetUsersInRoleAsync("SalesRepresentative");
@@ -109,13 +109,20 @@ namespace EventsService.Controllers
                 });
             }
 
+            var productsForJs = await _context.Products
+                                          .OrderBy(p => p.Name)
+                                          .Select(p => new ProductInfoForJs(p.Id.ToString(), p.Name, p.Price))
+                                          .ToListAsync();
+
             var viewModel = new CreateOrderViewModel
             {
                 Clients = new SelectList(await _context.Clients.OrderBy(c => c.Name).ToListAsync(), "Id", "Name"),
                 SalesRepresentatives = new SelectList(salesRepSelectListItems, "Value", "Text"),
-                Products = new MultiSelectList(await _context.Products.OrderBy(p => p.Name).ToListAsync(), "Id", "Name"),
+                ProductList = new SelectList(productsForJs, "Value", "Text"), // Use Value and Text from ProductInfoForJs
+                ProductDetailsForJs = productsForJs, // Populate the new list for JS
                 OrderDate = DateTime.UtcNow,
-                Status = OrderStatus.New
+                Status = OrderStatus.New,
+                OrderItems = new List<OrderItemViewModel>() // Initialize for the view
             };
             return View(viewModel);
         }
@@ -123,39 +130,83 @@ namespace EventsService.Controllers
         // POST: Orders/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(Roles = "Admin,Manager,SalesRepresentative")]
         public async Task<IActionResult> Create(CreateOrderViewModel viewModel)
         {
+            // Manually check MinLength for OrderItems because it might not be hit if the list is null or empty initially
+            // and client-side validation might be bypassed or not perfectly configured.
+            if (viewModel.OrderItems == null || !viewModel.OrderItems.Any())
+            {
+                ModelState.AddModelError("OrderItems", "Please add at least one product to the order.");
+            }
+
             if (ModelState.IsValid)
             {
                 var order = new Order
                 {
                     ClientId = viewModel.ClientId,
-                    SalesRepresentativeId = viewModel.SalesRepresentativeId,
+                    // SalesRepresentativeId will be set below based on user role
                     OrderDate = viewModel.OrderDate,
                     Status = viewModel.Status,
-                    OrderItems = new List<OrderItem>()
+                    OrderItems = new List<OrderItem>() // Initialize the actual order's items collection
                 };
 
-                if (viewModel.SelectedProductIds != null && viewModel.SelectedProductIds.Any())
+                var currentUser = await _userManager.GetUserAsync(User); // Get current user
+                if (currentUser == null)
                 {
-                    foreach (var productId in viewModel.SelectedProductIds)
+                    // This should ideally not happen due to [Authorize]
+                    ModelState.AddModelError("", "Unable to identify current user.");
+                    await RepopulateViewModelForCreateError(viewModel);
+                    return View(viewModel);
+                }
+
+                if (User.IsInRole("SalesRepresentative"))
+                {
+                    order.SalesRepresentativeId = currentUser.Id;
+                }
+                else // For Admin/Manager or other roles that might be allowed to select
+                {
+                    order.SalesRepresentativeId = viewModel.SalesRepresentativeId;
+                }
+
+
+                if (viewModel.OrderItems != null && viewModel.OrderItems.Any()) // Redundant check if MinLength works, but good for safety
+                {
+                    foreach (var itemVM in viewModel.OrderItems)
                     {
-                        var product = await _context.Products.FindAsync(productId);
+                        var product = await _context.Products.FindAsync(itemVM.ProductId);
                         if (product != null)
                         {
+                            // Check stock if necessary - for future enhancement
+                            // if (product.StockQuantity < itemVM.Quantity)
+                            // {
+                            //     ModelState.AddModelError("", $"Not enough stock for {product.Name}. Available: {product.StockQuantity}, Requested: {itemVM.Quantity}");
+                            //     continue; // Or break, depending on desired behavior
+                            // }
+
                             order.OrderItems.Add(new OrderItem
                             {
                                 ProductId = product.Id,
-                                Quantity = 1, // Default quantity to 1 for now
-                                PriceAtTimeOfOrder = product.Price
+                                Quantity = itemVM.Quantity,
+                                PriceAtTimeOfOrder = product.Price // Store price at time of order
                             });
+                        }
+                        else
+                        {
+                            ModelState.AddModelError("", $"Product with ID {itemVM.ProductId} not found. Please remove it or select a valid product.");
+                            // No need to break, collect all such errors
                         }
                     }
                 }
-                // else: Handle case where no products are selected if it's possible despite [Required]
-                // The [Required] on SelectedProductIds should prevent this if client-side validation works.
-                // If it can be empty, then the OrderItems list will be empty.
+                // else: The MinLength attribute on OrderItems should handle the case where it's empty.
+                // If it's null (e.g. form submission error or tampering), the initial check handles it.
+
+                if (!ModelState.IsValid) // Check if any product not found errors or stock errors were added
+                {
+                    // Re-populate necessary dropdowns/data for the view if ModelState became invalid
+                    await RepopulateViewModelForCreateError(viewModel);
+                    return View(viewModel);
+                }
 
                 _context.Add(order);
                 await _context.SaveChangesAsync();
@@ -163,25 +214,42 @@ namespace EventsService.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // If model state is invalid, re-populate dropdowns
+            // If model state was initially invalid (before custom logic) or became invalid due to product issues
+            await RepopulateViewModelForCreateError(viewModel);
+            return View(viewModel);
+        }
+
+        private async Task RepopulateViewModelForCreateError(CreateOrderViewModel viewModel)
+        {
+            var productsForJs = await _context.Products
+                                          .OrderBy(p => p.Name)
+                                          .Select(p => new ProductInfoForJs(p.Id.ToString(), p.Name, p.Price))
+                                          .ToListAsync();
+            viewModel.ProductList = new SelectList(productsForJs, "Value", "Text");
+            viewModel.ProductDetailsForJs = productsForJs;
+
             viewModel.Clients = new SelectList(await _context.Clients.OrderBy(c => c.Name).ToListAsync(), "Id", "Name", viewModel.ClientId);
-            // Re-populate SalesRepresentatives with formatted text
+
             var salesRepUsersForRepopulate = await _userManager.GetUsersInRoleAsync("SalesRepresentative");
+            // Consider including other roles like "Manager" if they can also be sales reps
+            // var managerUsers = await _userManager.GetUsersInRoleAsync("Manager");
+            // var allPotentialReps = salesRepUsersForRepopulate.Concat(managerUsers).DistinctBy(u => u.Id);
+
             var salesRepSelectListItemsForRepopulate = new List<SelectListItem>();
-            foreach (var user in salesRepUsersForRepopulate.OrderBy(u => u.UserName))
+            foreach (var userInRole in salesRepUsersForRepopulate.OrderBy(u => u.UserName)) // Adjust if using allPotentialReps
             {
-                var roles = await _userManager.GetRolesAsync(user);
+                var roles = await _userManager.GetRolesAsync(userInRole);
                 var primaryRole = roles.FirstOrDefault() ?? "Сотрудник";
                 salesRepSelectListItemsForRepopulate.Add(new SelectListItem
                 {
-                    Value = user.Id.ToString(),
-                    Text = $"{user.UserName} ({primaryRole})"
+                    Value = userInRole.Id.ToString(),
+                    Text = $"{userInRole.UserName} ({primaryRole})"
                 });
             }
             viewModel.SalesRepresentatives = new SelectList(salesRepSelectListItemsForRepopulate, "Value", "Text", viewModel.SalesRepresentativeId);
-            viewModel.Products = new MultiSelectList(await _context.Products.OrderBy(p => p.Name).ToListAsync(), "Id", "Name", viewModel.SelectedProductIds);
-            return View(viewModel);
+            // Note: viewModel.OrderItems will retain its submitted values, which is good for correcting them.
         }
+
 
         // GET: Orders/Details/5
         [Authorize(Roles = "Admin,Manager,SalesRepresentative,Client")] // Adjust roles as needed

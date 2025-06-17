@@ -41,10 +41,12 @@
             </div>
 
             <div class="form-group mb-3">
-                <label asp-for="SelectedProductIds" class="control-label"></label>
-                <select asp-for="SelectedProductIds" class="form-select" asp-items="Model.Products" multiple="multiple" size="8"></select> @* Changed to form-select for BS5, increased size *@
-                <span asp-validation-for="SelectedProductIds" class="text-danger"></span>
-                <small class="form-text text-muted">Удерживайте Ctrl (или Cmd на Mac), чтобы выбрать несколько позиций.</small>
+                <h5>Order Items</h5>
+                <div id="orderItemsContainer">
+                    @* Dynamic rows will be injected here by JavaScript *@
+                </div>
+                <button type="button" id="addProductItem" class="btn btn-info btn-sm mt-2">Add Product</button>
+                <span asp-validation-for="OrderItems" class="text-danger d-block mt-1"></span> <!-- Validation for the OrderItems list itself (e.g., MinLength) -->
             </div>
 
             <div class="form-group mt-4"> @* Increased top margin for button spacing *@
@@ -57,4 +59,126 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script> @* Ensure jQuery is available *@
+    <script>
+        $(document).ready(function () {
+            let itemIndex = 0; // To keep track of index for model binding
+
+            // Use ProductDetailsForJs which contains Value, Text, and Price
+            const productDetailsForJs = @Html.Raw(Json.Serialize(Model.ProductDetailsForJs ?? new List<EventsService.ViewModels.ProductInfoForJs>()));
+
+            function addOrderItemRow(item) {
+                const productId = item ? item.ProductId : "";
+                const quantity = item ? item.Quantity : 1;
+
+                let productOptions = '<option value="">-- Select Product --</option>';
+                if (productDetailsForJs && productDetailsForJs.length > 0) {
+                    productDetailsForJs.forEach(p => {
+                        // p.value, p.text, p.price (note: Json.Serialize might camelCase them to value, text, price)
+                        productOptions += `<option value="${p.value}" ${p.value == productId ? "selected" : ""}>${p.text}</option>`;
+                    });
+                } else {
+                    // Fallback if ProductList is empty or null
+                    productOptions = '<option value="">-- No products available --</option>';
+                }
+
+
+                // ASP.NET Core MVC model binding for collections requires indices to be zero-based and consecutive if no explicit index is provided.
+                // However, by using explicit indices in the name attribute (OrderItems[${itemIndex}]), we can handle non-consecutive indices
+                // that might arise from removing items from the middle, though ASP.NET Core is often smart enough.
+                // For simplicity and robustness, we use a unique index for each added row.
+                const currentIndex = $('#orderItemsContainer .order-item-row').length; // More robust index if rows are removed
+
+                const rowHtml = `
+                    <div class="order-item-row row mb-2 align-items-center">
+                        <div class="col-md-5">
+                            <label class="form-label visually-hidden">Product</label> <!-- Hidden label for accessibility -->
+                            <select name="OrderItems[${currentIndex}].ProductId" class="form-select product-select" required>${productOptions}</select>
+                            <span asp-validation-for="OrderItems[${currentIndex}].ProductId" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-3">
+                             <label class="form-label visually-hidden">Quantity</label> <!-- Hidden label for accessibility -->
+                            <input type="number" name="OrderItems[${currentIndex}].Quantity" value="${quantity}" class="form-control quantity-input" min="1" required />
+                            <span asp-validation-for="OrderItems[${currentIndex}].Quantity" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label visually-hidden">Price</label> <!-- Hidden label for accessibility -->
+                            <input type="text" class="form-control product-price-display" readonly disabled placeholder="Price"/>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-danger btn-sm remove-item w-100">Remove</button>
+                        </div>
+                    </div>`;
+                $('#orderItemsContainer').append(rowHtml);
+                // itemIndex++; // Not using itemIndex++ to ensure indices match actual row count after potential removals.
+
+                // Trigger price update for the new row
+                const newRow = $('#orderItemsContainer .order-item-row').last();
+                updatePriceForRow(newRow.find('.product-select'));
+            }
+
+            $('#addProductItem').click(function () {
+                addOrderItemRow();
+            });
+
+            $('#orderItemsContainer').on('click', '.remove-item', function () {
+                $(this).closest('.order-item-row').remove();
+                // Re-index after removal to ensure model binding works correctly if server expects contiguous indices
+                // (though ASP.NET Core often handles non-contiguous if names are fully qualified).
+                // For this version, we'll rely on ASP.NET Core's ability to bind non-contiguous indices by name.
+                // If issues arise, a re-indexing function would be needed here.
+                 $('#orderItemsContainer .order-item-row').each(function(idx, row) {
+                    $(row).find('.product-select').attr('name', `OrderItems[${idx}].ProductId`);
+                    $(row).find('.quantity-input').attr('name', `OrderItems[${idx}].Quantity`);
+                 });
+            });
+
+            // Function to fetch product price (simplified, assumes productsJson has price if needed, or make AJAX call)
+            // For this example, we'll assume productsJson might need price data or we fetch it.
+            // Let's simulate having price in productsJson for display purposes
+            // Modify productsJson to include price: @Html.Raw(Json.Serialize(Model.ProductList.Select(p => new { p.Value, p.Text, p.Price })));
+            // For now, we'll just leave a placeholder for price display.
+            // A better approach would be to fetch product details including price via an API call when a product is selected.
+
+            // const productDetails = @Html.Raw(Json.Serialize(
+            //    _context.Products.Select(p => new { Id = p.Id.ToString(), p.Price }).ToDictionary(p => p.Id, p => p.Price)
+            // )); // This was the problematic line, removed.
+
+            function updatePriceForRow(selectElement) {
+                const selectedProductId = $(selectElement).val();
+                const priceInput = $(selectElement).closest('.order-item-row').find('.product-price-display');
+
+                const selectedProductDetail = productDetailsForJs.find(p => p.value == selectedProductId);
+
+                if (selectedProductDetail) {
+                    priceInput.val(selectedProductDetail.price.toFixed(2));
+                } else {
+                    priceInput.val('');
+                }
+            }
+
+            $('#orderItemsContainer').on('change', '.product-select', function () {
+                updatePriceForRow(this);
+            });
+
+
+            // If model state is invalid and OrderItems has data, re-populate the rows
+            // Or if it's an Edit page (though this is Create.cshtml)
+            let initialItemCount = 0;
+            @if (Model.OrderItems != null && Model.OrderItems.Any())
+            {
+                @foreach (var item in Model.OrderItems)
+                {
+                    // Ensure ProductId is a string for comparison with option values if necessary
+                    @:addOrderItemRow({ ProductId: "@item.ProductId.ToString()", Quantity: @item.Quantity });
+                    initialItemCount++;
+                }
+            }
+
+            if (initialItemCount === 0) {
+                // Add one empty row by default for new orders if no items from model state
+                 addOrderItemRow();
+            }
+        });
+    </script>
 }

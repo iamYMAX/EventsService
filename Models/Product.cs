@@ -19,6 +19,17 @@ namespace EventsService.Models
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; }
 
+        [Display(Name = "Stock Quantity")]
+        public int StockQuantity { get; set; } = 0;
+
+        [StringLength(250)]
+        [Display(Name = "Packaging Details")]
+        public string? PackagingDetails { get; set; }
+
+        [StringLength(1024)]
+        [Display(Name = "Image URL/Path")]
+        public string? ImageUrl { get; set; }
+
         public virtual ICollection<OrderItem>? OrderItems { get; set; }
     }
 }

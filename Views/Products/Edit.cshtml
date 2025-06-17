@@ -6,9 +6,10 @@
 <hr />
 <div class="row">
     <div class="col-md-6">
-        <form asp-action="Edit">
+        <form asp-action="Edit" method="post" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
+            <input type="hidden" asp-for="ImageUrl" /> <!-- To retain existing ImageUrl if no new image is uploaded -->
             <div class="form-group mb-3">
                 <label asp-for="Name" class="control-label"></label>
                 <input asp-for="Name" class="form-control" />
@@ -24,6 +25,36 @@
                 <input asp-for="Price" class="form-control" type="number" step="0.01" min="0" />
                 <span asp-validation-for="Price" class="text-danger"></span>
             </div>
+            <div class="form-group mb-3">
+                <label asp-for="StockQuantity" class="control-label"></label>
+                <input asp-for="StockQuantity" class="form-control" type="number" min="0" />
+                <span asp-validation-for="StockQuantity" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="PackagingDetails" class="control-label"></label>
+                <input asp-for="PackagingDetails" class="form-control" />
+                <span asp-validation-for="PackagingDetails" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ImageUrl" class="control-label">Current Image</label>
+                @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                {
+                    <img src="@Url.Content(Model.ImageUrl)" alt="Product Image" style="max-height: 150px; max-width: 100%; display: block; margin-bottom: 10px;" />
+                    <p>Current image path: @Model.ImageUrl</p>
+                }
+                else
+                {
+                    <p>No image uploaded.</p>
+                }
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="productImage" class="control-label">Upload New Image (Optional)</label>
+                <input type="file" name="productImage" id="productImage" class="form-control" />
+                <small class="form-text text-muted">Leave blank to keep the current image.</small>
+            </div>
+
             <div class="form-group mt-3">
                 <input type="submit" value="Сохранить" class="btn btn-success me-2" />
                 <a asp-action="Index" class="btn btn-secondary">Отмена</a>

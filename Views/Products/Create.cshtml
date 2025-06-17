@@ -6,7 +6,7 @@
 <hr />
 <div class="row">
     <div class="col-md-6">
-        <form asp-action="Create">
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group mb-3">
                 <label asp-for="Name" class="control-label"></label>
@@ -22,6 +22,21 @@
                 <label asp-for="Price" class="control-label"></label>
                 <input asp-for="Price" class="form-control" type="number" step="0.01" min="0" />
                 <span asp-validation-for="Price" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="StockQuantity" class="control-label"></label>
+                <input asp-for="StockQuantity" class="form-control" type="number" min="0" />
+                <span asp-validation-for="StockQuantity" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="PackagingDetails" class="control-label"></label>
+                <input asp-for="PackagingDetails" class="form-control" />
+                <span asp-validation-for="PackagingDetails" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label for="productImage" class="control-label">Product Image</label>
+                <input type="file" name="productImage" id="productImage" class="form-control" />
+                <span asp-validation-for="ImageUrl" class="text-danger"></span> <!-- Assuming validation errors for image might map to ImageUrl or a custom key -->
             </div>
             <div class="form-group mt-3">
                 <input type="submit" value="Создать" class="btn btn-success me-2" />
