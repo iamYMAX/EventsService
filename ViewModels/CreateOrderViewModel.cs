@@ -1,12 +1,13 @@
+// Path: ViewModels/CreateOrderViewModel.cs
 using EventsService.Models;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System; // Required for DateTime
 
 namespace EventsService.ViewModels
 {
-    public record ProductInfoForJs(string Value, string Text, decimal Price); // Moved to be clearly public at namespace level
+    public record ProductInfoForJs(string Value, string Text, decimal Price);
 
     public class CreateOrderViewModel
     {
@@ -16,7 +17,8 @@ namespace EventsService.ViewModels
         public SelectList? Clients { get; set; }
 
         [Display(Name = "Ответственный сотрудник (Торговый представитель)")]
-        public string? SalesRepresentativeId { get; set; } // Changed from int? to string?
+        public string? SalesRepresentativeId { get; set; } // Corrected type
+
         public SelectList? SalesRepresentatives { get; set; }
 
         [Required(ErrorMessage = "Дата заявки обязательна.")]

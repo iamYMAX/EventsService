@@ -1,7 +1,9 @@
+// Path: Models/Order.cs
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using EventsService.Models; // Assuming User and Client models are in this namespace
 
 namespace EventsService.Models
 {
@@ -23,7 +25,7 @@ namespace EventsService.Models
         [ForeignKey("ClientId")]
         public virtual Client? Client { get; set; }
 
-        public string? SalesRepresentativeId { get; set; } // Nullable if not always assigned immediately; Changed to string to align with User.Id
+        public string? SalesRepresentativeId { get; set; } // Corrected type
         [ForeignKey("SalesRepresentativeId")]
         public virtual User? SalesRepresentative { get; set; }
 

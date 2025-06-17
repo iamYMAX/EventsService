@@ -1,3 +1,4 @@
+// Path: Views/Orders/Edit.cshtml
 @model EventsService.ViewModels.EditOrderViewModel
 
 @{
@@ -35,10 +36,9 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function () {
-            let initialItemCount = 0; // Declare at the top of the scope
+            let initialItemCount = 0; // Declare at the top
 
             const productDetailsForJs = @Html.Raw(Json.Serialize(Model.ProductDetailsForJs ?? new List<EventsService.ViewModels.ProductInfoForJs>()));
-            // itemIndex is not used due to re-indexing logic.
 
             function reindexOrderItems() {
                 $('#orderItemsContainer .order-item-row').each(function(idx, row) {
@@ -51,29 +51,17 @@
                 const selectedProductId = $(selectElement).val();
                 const priceInput = $(selectElement).closest('.order-item-row').find('.product-price-display');
                 const selectedProductDetail = productDetailsForJs.find(p => p.value == selectedProductId);
-
-                if (selectedProductDetail) {
-                    priceInput.val(selectedProductDetail.price.toFixed(2));
-                } else {
-                    priceInput.val('');
-                }
+                if (selectedProductDetail) { priceInput.val(selectedProductDetail.price.toFixed(2)); } else { priceInput.val(''); }
             }
 
             function addOrderItemRow(item) {
                 const currentItemCount = $('#orderItemsContainer .order-item-row').length;
-                const productId = item ? item.ProductId : ""; // ProductId from item will be int
+                const productId = item ? item.ProductId : "";
                 const quantity = item ? item.Quantity : 1;
-
                 let productOptions = '<option value="">-- Select Product --</option>';
                 if (productDetailsForJs && productDetailsForJs.length > 0) {
-                    productDetailsForJs.forEach(p => {
-                        // p.value is string (from Product.Id.ToString())
-                        productOptions += `<option value="${p.value}" ${p.value == productId.toString() ? "selected" : ""}>${p.text}</option>`; // Ensure productId is string for comparison
-                    });
-                } else {
-                    productOptions = '<option value="">-- No products available --</option>';
-                }
-
+                    productDetailsForJs.forEach(p => { productOptions += `<option value="${p.value}" ${p.value == productId.toString() ? "selected" : ""}>${p.text}</option>`; });
+                } else { productOptions = '<option value="">-- No products available --</option>'; }
                 const rowHtml = `
                     <div class="order-item-row row mb-2 align-items-center">
                         <div class="col-md-5"><select name="OrderItems[${currentItemCount}].ProductId" class="form-select product-select" required>${productOptions}</select></div>
@@ -89,16 +77,15 @@
             $('#orderItemsContainer').on('click', '.remove-item', function () { $(this).closest('.order-item-row').remove(); reindexOrderItems(); });
             $('#orderItemsContainer').on('change', '.product-select', function () { updatePriceForRow(this); });
 
+            initialItemCount = 0; // Reset before loop
             @if (Model.OrderItems != null && Model.OrderItems.Any())
             {
                 @foreach (var item in Model.OrderItems)
                 {
-                    // ProductId is int, pass as is. Comparison logic in addOrderItemRow handles it.
-                    @:addOrderItemRow({ ProductId: @item.ProductId, Quantity: @item.Quantity });
+                    @:addOrderItemRow({ ProductId: "@item.ProductId.ToString()", Quantity: @item.Quantity });
                     initialItemCount++;
                 }
             }
-
             if (initialItemCount === 0) { addOrderItemRow(); }
         });
     </script>
