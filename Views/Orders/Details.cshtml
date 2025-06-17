@@ -1,0 +1,69 @@
+@model EventsService.ViewModels.OrderViewModel
+@using EventsService.Models // For OrderItem if used directly from ViewBag
+
+@{ ViewData["Title"] = "Детали заявки"; }
+
+<h1>@ViewData["Title"] #@Model.Id</h1>
+<hr />
+<div>
+    <dl class="row">
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ClientName)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.ClientName)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.SalesRepresentativeDisplay)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.SalesRepresentativeDisplay)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.OrderDate)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.OrderDate)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Status)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Status)</dd>
+    </dl>
+</div>
+
+<h4 class="mt-4">Товары/Услуги в заявке:</h4>
+@if (ViewBag.OrderItems != null && ((IEnumerable<OrderItem>)ViewBag.OrderItems).Any())
+{
+    <table class="table table-sm table-bordered mt-2">
+        <thead class="table-light">
+            <tr>
+                <th>Товар/Услуга</th>
+                <th>Количество</th>
+                <th>Цена (на момент заказа)</th>
+                <th>Сумма</th>
+            </tr>
+        </thead>
+        <tbody>
+            @{
+                decimal totalOrderAmount = 0;
+                foreach (var item in (IEnumerable<OrderItem>)ViewBag.OrderItems)
+                {
+                    var itemTotal = item.Quantity * item.PriceAtTimeOfOrder;
+                    totalOrderAmount += itemTotal;
+                    <tr>
+                        <td>@(item.Product?.Name ?? "N/A")</td>
+                        <td>@item.Quantity</td>
+                        <td>@item.PriceAtTimeOfOrder.ToString("C2")</td>
+                        <td>@itemTotal.ToString("C2")</td>
+                    </tr>
+                }
+                if (totalOrderAmount > 0)
+                {
+                    <tr class="fw-bold">
+                        <td colspan="3" class="text-end">Общая сумма по заявке:</td>
+                        <td>@totalOrderAmount.ToString("C2")</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>Нет товаров или услуг в этой заявке.</p>
+}
+
+<div class="mt-4">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary me-2">Изменить</a>
+    <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
+</div>

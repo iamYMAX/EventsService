@@ -29,7 +29,7 @@ namespace EventsService.Data
                 .HasMany(u => u.SalesRepresentativeOrders)
                 .WithOne(o => o.SalesRepresentative)
                 .HasForeignKey(o => o.SalesRepresentativeId)
-                .OnDelete(DeleteBehavior.Restrict); // Or .SetNull if preferred
+                .OnDelete(DeleteBehavior.SetNull); // Changed to SetNull
 
             // Client -> Orders (One-to-Many)
             modelBuilder.Entity<Client>()

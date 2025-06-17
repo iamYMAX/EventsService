@@ -100,10 +100,40 @@ namespace EventsService.Controllers
                         }
                     }
                 }
+                // If user is null, result.Succeeded will be false by virtue of not attempting PasswordSignInAsync or it failing.
+                // If user was found but PasswordSignInAsync failed, result will reflect that.
+                // So, the following handles both user not found and password incorrect, and other states.
 
-                // If user is null or result is not Succeeded (and not handled by other Identity states like lockout/2FA if they were enabled)
-                // _logger.LogWarning($"Failed login attempt for email {email}."); // Example logging
-                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                if (result != null) // result would be null if user was null and we didn't proceed to PasswordSignInAsync
+                {
+                    if (result.IsLockedOut)
+                    {
+                        // _logger.LogWarning($"User account locked out for email {email}."); // Example logging
+                        ModelState.AddModelError(string.Empty, "Учетная запись заблокирована.");
+                    }
+                    else if (result.IsNotAllowed)
+                    {
+                        // _logger.LogWarning($"User not allowed to sign in for email {email}. (EmailConfirmed? {user?.EmailConfirmed})"); // Example logging
+                        ModelState.AddModelError(string.Empty, "Вход не разрешен. Возможно, требуется подтверждение email?");
+                        // Note: Our current setup has EmailConfirmed = true for new users and SignIn.RequireConfirmedAccount = false,
+                        // so this specific IsNotAllowed case due to email confirmation is unlikely unless settings change.
+                    }
+                    else if (result.RequiresTwoFactor)
+                    {
+                        // _logger.LogWarning($"Two-factor authentication required for email {email}."); // Example logging
+                        // return RedirectToAction(nameof(LoginWith2fa), new { returnUrl, model.RememberMe }); // If 2FA is implemented
+                        ModelState.AddModelError(string.Empty, "Требуется двухфакторная аутентификация.");
+                    }
+                    else // This will catch general failures like wrong password
+                    {
+                        // _logger.LogWarning($"Invalid login attempt for email {email}."); // Example logging
+                        ModelState.AddModelError(string.Empty, "Неверная попытка входа (неправильный email или пароль).");
+                    }
+                }
+                else // This case handles if user was null (user not found by email)
+                {
+                     ModelState.AddModelError(string.Empty, "Неверная попытка входа (пользователь не найден).");
+                }
                 // return View(model); // If using a ViewModel
                 return View(); // Current structure
             }
