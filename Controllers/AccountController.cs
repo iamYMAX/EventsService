@@ -99,51 +99,44 @@ namespace EventsService.Controllers
                             return RedirectToAction("Index", "Home");
                         }
                     }
-                }
-                // If user is null, result.Succeeded will be false by virtue of not attempting PasswordSignInAsync or it failing.
-                // If user was found but PasswordSignInAsync failed, result will reflect that.
-                // So, the following handles both user not found and password incorrect, and other states.
-
-                // ... внутри Login POST action ...
-                if (ModelState.IsValid)
-                {
-                    var user = await _userManager.FindByEmailAsync(email);
-                    Microsoft.AspNetCore.Identity.SignInResult result = null; // Объявить result здесь
-
-                    if (user != null)
+                    else // This 'else' corresponds to 'if (result.Succeeded)'
                     {
-                        result = await _signInManager.PasswordSignInAsync(user.UserName, password, rememberMe, lockoutOnFailure: false);
-                        if (result.Succeeded)
+                        // If PasswordSignInAsync failed, check 'result' for specific failure reasons.
+                        if (result.IsLockedOut)
                         {
-                            // ... логика успеха ...
-                            return RedirectToAction("Index", "Home"); // или return Redirect(returnUrl);
+                            // _logger.LogWarning($"User account locked out for {email}."); // Example logging
+                            ModelState.AddModelError(string.Empty, "User account locked out.");
+                        }
+                        else if (result.IsNotAllowed)
+                        {
+                            // _logger.LogWarning($"User {email} is not allowed to sign in."); // Example logging
+                            ModelState.AddModelError(string.Empty, "User is not allowed to sign in. Email may not be confirmed.");
+                        }
+                        else if (result.RequiresTwoFactor)
+                        {
+                            // return RedirectToAction(nameof(LoginWith2fa), new { returnUrl, rememberMe }); // Example 2FA
+                            ModelState.AddModelError(string.Empty, "Two-factor authentication is required.");
+                        }
+                        else
+                        {
+                            // General failure (e.g. wrong password for the found user)
+                            ModelState.AddModelError(string.Empty, "Invalid login attempt.");
                         }
                     }
-
-                    // Теперь блок проверки ошибок для result (после if user != null)
-                    if (result == null) // Если user не был найден, result останется null
-                    {
-                        ModelState.AddModelError(string.Empty, "Неверная попытка входа (пользователь не найден).");
-                    }
-                    else if (result.IsLockedOut)
-                    {
-                        ModelState.AddModelError(string.Empty, "Учетная запись заблокирована.");
-                    }
-                    else if (result.IsNotAllowed)
-                    {
-                        ModelState.AddModelError(string.Empty, "Вход не разрешен. Возможно, требуется подтверждение email?");
-                    }
-                    // ... и т.д. для других проверок result ...
-                    else
-                    {
-                        ModelState.AddModelError(string.Empty, "Неверная попытка входа (неправильный email или пароль).");
-                    }
                 }
-                
+                else // This 'else' corresponds to 'if (user != null)'
+                {
+                    // User was not found by email.
+                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                }
+                // If we've reached here, it means either user was null, or sign-in failed.
+                // In either case, ModelState will have an error, and we should return the View.
                 // return View(model); // If using a ViewModel
-                return View(); // Current structure
+                return View(); // Current structure, returning View for any login failure not resulting in redirect
             }
 
+            // If ModelState was initially invalid (e.g., email or password format wrong, if validated by attributes on a ViewModel)
+            // This is the fallback if the initial ModelState.IsValid is false.
             // return View(model); // If using a ViewModel
             return View(); // Current structure
         }
