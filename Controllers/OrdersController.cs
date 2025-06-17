@@ -335,6 +335,7 @@ namespace EventsService.Controllers
                 SalesRepresentativeId = order.SalesRepresentativeId,
                 SalesRepresentativeName = currentSalesRepDisplayName, // Display current sales rep name
                 OrderDate = order.OrderDate,
+                ScheduledServiceDateTime = order.ScheduledServiceDateTime, // Add this line
                 Status = order.Status,
                 OrderItems = order.OrderItems?.Select(oi => new OrderItemViewModel
                 {
@@ -424,7 +425,13 @@ namespace EventsService.Controllers
                 // Update scalar properties based on permissions
                 if (canEditClient) orderToUpdate.ClientId = viewModel.ClientId;
                 if (canEditSalesRepresentative) orderToUpdate.SalesRepresentativeId = viewModel.SalesRepresentativeId; // Nullable
-                if (canEditOrderDate) orderToUpdate.OrderDate = viewModel.OrderDate;
+
+                if (canEditOrderDate) // This flag is currently true only for Admins
+                {
+                   orderToUpdate.OrderDate = viewModel.OrderDate;
+                   orderToUpdate.ScheduledServiceDateTime = viewModel.ScheduledServiceDateTime; // Add this line
+                }
+
                 if (canEditStatus) orderToUpdate.Status = viewModel.Status;
 
                 // OrderItems processing

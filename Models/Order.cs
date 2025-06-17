@@ -30,6 +30,10 @@ namespace EventsService.Models
         [Required]
         public DateTime OrderDate { get; set; } = DateTime.UtcNow;
 
+        [DataType(DataType.DateTime)]
+        [Display(Name = "Планируемая дата/время услуги")]
+        public DateTime? ScheduledServiceDateTime { get; set; } // New property
+
         [Required]
         public OrderStatus Status { get; set; } = OrderStatus.New;
 

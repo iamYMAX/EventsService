@@ -26,9 +26,9 @@
                     <ul class="navbar-nav flex-grow-1">
                         @if (SignInManager.IsSignedIn(User))
                         {
-                            // Расписание (Schedule) - Visible to all authenticated users
+                            // Главная страница (Home Page) - Visible to all authenticated users
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Расписание</a>
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Главная страница</a>
                             </li>
 
                             // Заявки (Orders) - Visible to Admin, Manager, SalesRepresentative, Client
@@ -38,11 +38,6 @@
                                     <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Index">Заявки</a>
                                 </li>
                             }
-
-                            // Расписание событий (Scheduled Events) - Visible to all authenticated users
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="ScheduledEvents" asp-action="Index">Расписание событий</a>
-                            </li>
 
                             // Сотрудники (Employees/Users) - Visible to Admin
                             @if (User.IsInRole("Admin"))

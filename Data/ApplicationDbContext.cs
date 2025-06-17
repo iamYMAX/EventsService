@@ -21,7 +21,6 @@ namespace EventsService.Data
         public DbSet<Parameter> Parameters { get; set; }
         public DbSet<Characteristic> Characteristics { get; set; }
         public DbSet<Property> Properties { get; set; }
-        public DbSet<ScheduledEvent> ScheduledEvents { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -100,25 +99,6 @@ namespace EventsService.Data
                 .WithOne(prop => prop.Product)
                 .HasForeignKey(prop => prop.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            // ScheduledEvent relationships
-            modelBuilder.Entity<ScheduledEvent>()
-                .HasOne(se => se.User)
-                .WithMany() // Assuming User does not have a direct ICollection<ScheduledEvent>
-                .HasForeignKey(se => se.UserId)
-                .OnDelete(DeleteBehavior.SetNull); // If User is deleted, set ScheduledEvent.UserId to null
-
-            modelBuilder.Entity<ScheduledEvent>()
-                .HasOne(se => se.Client)
-                .WithMany() // Assuming Client does not have a direct ICollection<ScheduledEvent>
-                .HasForeignKey(se => se.ClientId)
-                .OnDelete(DeleteBehavior.SetNull); // If Client is deleted, set ScheduledEvent.ClientId to null
-
-            modelBuilder.Entity<ScheduledEvent>()
-                .HasOne(se => se.Order)
-                .WithMany() // Assuming Order does not have a direct ICollection<ScheduledEvent>
-                .HasForeignKey(se => se.OrderId)
-                .OnDelete(DeleteBehavior.SetNull); // If Order is deleted, set ScheduledEvent.OrderId to null
         }
     }
 }

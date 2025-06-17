@@ -30,6 +30,20 @@
             </div>
 
             <div class="form-group mb-3">
+                <label asp-for="ScheduledServiceDateTime" class="control-label"></label>
+                @if (Model.CanEditOrderDate) // Using CanEditOrderDate as a proxy for now (Admins)
+                {
+                    <input asp-for="ScheduledServiceDateTime" class="form-control" type="datetime-local" />
+                    <span asp-validation-for="ScheduledServiceDateTime" class="text-danger"></span>
+                }
+                else
+                {
+                    <input type="text" readonly class="form-control-plaintext" value="@(Model.ScheduledServiceDateTime.HasValue ? Model.ScheduledServiceDateTime.Value.ToString("g") : "Не указано")" />
+                    <input type="hidden" asp-for="ScheduledServiceDateTime" />
+                }
+            </div>
+
+            <div class="form-group mb-3">
                 <label asp-for="SalesRepresentativeId" class="control-label"></label>
                 @if (Model.CanEditSalesRepresentative)
                 {

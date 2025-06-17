@@ -28,6 +28,10 @@ namespace EventsService.ViewModels
         [Display(Name = "Дата заявки")]
         public DateTime OrderDate { get; set; }
 
+        [DataType(DataType.DateTime)]
+        [Display(Name = "Планируемая дата/время услуги")]
+        public DateTime? ScheduledServiceDateTime { get; set; }
+
         [Required(ErrorMessage = "Статус заявки обязателен.")]
         [Display(Name = "Статус заявки")]
         public OrderStatus Status { get; set; }
