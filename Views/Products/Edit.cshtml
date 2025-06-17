@@ -24,11 +24,64 @@
                 <input asp-for="Price" class="form-control" type="number" step="0.01" min="0" />
                 <span asp-validation-for="Price" class="text-danger"></span>
             </div>
+            <div class="form-group mb-3">
+                <label asp-for="Quantity" class="control-label">Количество</label>
+                <input asp-for="Quantity" class="form-control" type="number" min="0" />
+                <span asp-validation-for="Quantity" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="SKU" class="control-label">Артикул (SKU)</label>
+                <input asp-for="SKU" class="form-control" />
+                <span asp-validation-for="SKU" class="text-danger"></span>
+            </div>
+
             <div class="form-group mt-3">
                 <input type="submit" value="Сохранить" class="btn btn-success me-2" />
                 <a asp-action="Index" class="btn btn-secondary">Отмена</a>
             </div>
         </form>
+    </div>
+
+    <div class="col-md-6">
+        <h4>Дополнительная информация</h4>
+        <p class="text-muted">Управление параметрами, характеристиками и свойствами будет доступно в отдельном интерфейсе или в будущих обновлениях.</p>
+
+        @if (Model.Parameters != null && Model.Parameters.Any())
+        {
+            <h5 class="mt-4">Параметры</h5>
+            <ul class="list-group">
+                @foreach (var item in Model.Parameters)
+                {
+                    <li class="list-group-item"><strong>@Html.DisplayFor(modelItem => item.Name):</strong> @Html.DisplayFor(modelItem => item.Value)</li>
+                }
+            </ul>
+        }
+        else { <p>Нет параметров.</p> }
+
+
+        @if (Model.Characteristics != null && Model.Characteristics.Any())
+        {
+            <h5 class="mt-4">Характеристики</h5>
+            <ul class="list-group">
+                @foreach (var item in Model.Characteristics)
+                {
+                    <li class="list-group-item"><strong>@Html.DisplayFor(modelItem => item.Name):</strong> @Html.DisplayFor(modelItem => item.Value)</li>
+                }
+            </ul>
+        }
+        else { <p>Нет характеристик.</p> }
+
+        @if (Model.Properties != null && Model.Properties.Any())
+        {
+            <h5 class="mt-4">Свойства</h5>
+            <ul class="list-group">
+                @foreach (var item in Model.Properties)
+                {
+                    <li class="list-group-item"><strong>@Html.DisplayFor(modelItem => item.Name):</strong> @Html.DisplayFor(modelItem => item.Value)</li>
+                }
+            </ul>
+        }
+         else { <p>Нет свойств.</p> }
     </div>
 </div>
 

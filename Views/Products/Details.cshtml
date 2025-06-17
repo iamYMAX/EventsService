@@ -12,8 +12,47 @@
         <dd class="col-sm-9">@Html.DisplayFor(model => model.Description)</dd>
 
         <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Price)</dt>
-        <dd class="col-sm-9">@Model.Price.ToString("C2")</dd> @* Format as currency *@
+        <dd class="col-sm-9">@Model.Price.ToString("C2")</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Quantity)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Quantity)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.SKU)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.SKU)</dd>
     </dl>
+
+    @if (Model.Parameters != null && Model.Parameters.Any())
+    {
+        <h5 class="mt-4">Параметры</h5>
+        <ul class="list-group">
+            @foreach (var item in Model.Parameters)
+            {
+                <li class="list-group-item"><strong>@Html.DisplayFor(modelItem => item.Name):</strong> @Html.DisplayFor(modelItem => item.Value)</li>
+            }
+        </ul>
+    }
+
+    @if (Model.Characteristics != null && Model.Characteristics.Any())
+    {
+        <h5 class="mt-4">Характеристики</h5>
+        <ul class="list-group">
+            @foreach (var item in Model.Characteristics)
+            {
+                <li class="list-group-item"><strong>@Html.DisplayFor(modelItem => item.Name):</strong> @Html.DisplayFor(modelItem => item.Value)</li>
+            }
+        </ul>
+    }
+
+    @if (Model.Properties != null && Model.Properties.Any())
+    {
+        <h5 class="mt-4">Свойства</h5>
+        <ul class="list-group">
+            @foreach (var item in Model.Properties)
+            {
+                <li class="list-group-item"><strong>@Html.DisplayFor(modelItem => item.Name):</strong> @Html.DisplayFor(modelItem => item.Value)</li>
+            }
+        </ul>
+    }
 </div>
 <div class="mt-4">
     <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-primary me-2">Изменить</a>

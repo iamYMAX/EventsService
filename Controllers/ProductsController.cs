@@ -33,6 +33,9 @@ namespace EventsService.Controllers
             }
 
             var product = await _context.Products
+                .Include(p => p.Parameters)
+                .Include(p => p.Characteristics)
+                .Include(p => p.Properties)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (product == null)
             {
@@ -51,7 +54,7 @@ namespace EventsService.Controllers
         // POST: Products/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Description,Price")] Product product)
+        public async Task<IActionResult> Create([Bind("Name,Description,Price,Quantity,SKU")] Product product)
         {
             if (ModelState.IsValid)
             {
@@ -71,7 +74,12 @@ namespace EventsService.Controllers
                 return NotFound();
             }
 
-            var product = await _context.Products.FindAsync(id);
+            var product = await _context.Products
+                .Include(p => p.Parameters)
+                .Include(p => p.Characteristics)
+                .Include(p => p.Properties)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
             if (product == null)
             {
                 return NotFound();
@@ -82,7 +90,7 @@ namespace EventsService.Controllers
         // POST: Products/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Description,Price")] Product product)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Description,Price,Quantity,SKU")] Product product)
         {
             if (id != product.Id)
             {
@@ -93,7 +101,30 @@ namespace EventsService.Controllers
             {
                 try
                 {
-                    _context.Update(product);
+                    // Fetch the existing product from DB, including its collections
+                    var productToUpdate = await _context.Products
+                        .Include(p => p.Parameters)
+                        .Include(p => p.Characteristics)
+                        .Include(p => p.Properties)
+                        .FirstOrDefaultAsync(p => p.Id == id);
+
+                    if (productToUpdate == null)
+                    {
+                        return NotFound();
+                    }
+
+                    // Update only the scalar properties from the bound 'product' model
+                    productToUpdate.Name = product.Name;
+                    productToUpdate.Description = product.Description;
+                    productToUpdate.Price = product.Price;
+                    productToUpdate.Quantity = product.Quantity;
+                    productToUpdate.SKU = product.SKU;
+
+                    // Note: Changes to Parameters, Characteristics, Properties are not handled here directly.
+                    // This would require more complex logic to compare and update collections,
+                    // often done with specific UI elements in the view (e.g., JavaScript based forms).
+
+                    _context.Update(productToUpdate);
                     await _context.SaveChangesAsync();
                     // TempData["SuccessMessage"] = "Товар/услуга успешно обновлен(а).";
                 }
@@ -110,7 +141,13 @@ namespace EventsService.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(product);
+            // If ModelState is invalid, we need to reload the product with its collections for the view
+            var productForView = await _context.Products
+                .Include(p => p.Parameters)
+                .Include(p => p.Characteristics)
+                .Include(p => p.Properties)
+                .FirstOrDefaultAsync(p => p.Id == id);
+            return View(productForView); // Return the fully loaded product to the view
         }
 
         // GET: Products/Delete/5

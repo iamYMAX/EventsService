@@ -23,6 +23,19 @@
                 <input asp-for="Price" class="form-control" type="number" step="0.01" min="0" />
                 <span asp-validation-for="Price" class="text-danger"></span>
             </div>
+            <div class="form-group mb-3">
+                <label asp-for="Quantity" class="control-label">Количество</label>
+                <input asp-for="Quantity" class="form-control" type="number" min="0" />
+                <span asp-validation-for="Quantity" class="text-danger"></span>
+            </div>
+            <div class="form-group mb-3">
+                <label asp-for="SKU" class="control-label">Артикул (SKU)</label>
+                <input asp-for="SKU" class="form-control" />
+                <span asp-validation-for="SKU" class="text-danger"></span>
+            </div>
+
+            @* Parameters, Characteristics, Properties will be handled via separate UI/future enhancement *@
+
             <div class="form-group mt-3">
                 <input type="submit" value="Создать" class="btn btn-success me-2" />
                 <a asp-action="Index" class="btn btn-secondary">Отмена</a>

@@ -18,6 +18,10 @@ namespace EventsService.Data
         public DbSet<Checklist> Checklists { get; set; }
         public DbSet<ChecklistItem> ChecklistItems { get; set; }
 
+        public DbSet<Parameter> Parameters { get; set; }
+        public DbSet<Characteristic> Characteristics { get; set; }
+        public DbSet<Property> Properties { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder); // Important for Identity tables
@@ -75,6 +79,26 @@ namespace EventsService.Data
                 .HasForeignKey<Client>(c => c.UserId)
                 .OnDelete(DeleteBehavior.SetNull); // If User is deleted, set Client.UserId to null
 
+            // Product to Parameters relationship
+            modelBuilder.Entity<Product>()
+                .HasMany(p => p.Parameters)
+                .WithOne(param => param.Product)
+                .HasForeignKey(param => param.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Product to Characteristics relationship
+            modelBuilder.Entity<Product>()
+                .HasMany(p => p.Characteristics)
+                .WithOne(c => c.Product)
+                .HasForeignKey(c => c.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Product to Properties relationship
+            modelBuilder.Entity<Product>()
+                .HasMany(p => p.Properties)
+                .WithOne(prop => prop.Product)
+                .HasForeignKey(prop => prop.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

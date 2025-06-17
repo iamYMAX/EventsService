@@ -20,6 +20,7 @@ else
                 <th>@Html.DisplayNameFor(model => model.First().Name)</th>
                 <th>@Html.DisplayNameFor(model => model.First().Description)</th>
                 <th>@Html.DisplayNameFor(model => model.First().Price)</th>
+                <th>Количество</th> @* New Column Header *@
                 <th>Действия</th>
             </tr>
         </thead>
@@ -28,7 +29,8 @@ else
             <tr>
                 <td>@Html.DisplayFor(modelItem => item.Name)</td>
                 <td>@Html.DisplayFor(modelItem => item.Description)</td>
-                <td>@item.Price.ToString("C2")</td> @* Format as currency *@
+                <td>@item.Price.ToString("C2")</td>
+                <td>@Html.DisplayFor(modelItem => item.Quantity)</td> @* New Column Data *@
                 <td>
                     <div class="btn-group" role="group">
                         <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Изменить</a>
