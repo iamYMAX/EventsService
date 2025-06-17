@@ -85,6 +85,35 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Diagnostic check for Product.Quantity column in Development
+if (app.Environment.IsDevelopment())
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        var dbContext = services.GetRequiredService<ApplicationDbContext>();
+        try
+        {
+            // Try a benign query that would fail if 'Quantity' column is missing from Products table
+            dbContext.Products.Select(p => p.Quantity).Take(1).ToList();
+            logger.LogInformation("Product.Quantity column diagnostic check passed.");
+        }
+        catch (Exception ex) when (ex.InnerException is Microsoft.Data.Sqlite.SqliteException sqliteEx && sqliteEx.Message.ToLower().Contains("no such column"))
+        {
+            logger.LogWarning(sqliteEx,
+                "DIAGNOSTIC WARNING: Could not access 'Product.Quantity' column. " +
+                "This might indicate that database migrations have not been fully applied. " +
+                "Please ensure your database schema is up-to-date. Try running 'dotnet ef database update'.");
+        }
+        catch (Exception ex)
+        {
+            // Catch other potential exceptions during the check, but don't make it fatal for app startup
+            logger.LogWarning(ex, "An unexpected error occurred during the Product.Quantity diagnostic check.");
+        }
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
