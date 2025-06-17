@@ -72,27 +72,44 @@ namespace EventsService.Controllers
         public async Task<IActionResult> Login(string email, string password, bool rememberMe, string? returnUrl = null) // Replace with a ViewModel later
         {
             ViewData["ReturnUrl"] = returnUrl;
-            if (ModelState.IsValid)
+            // It's good practice to create a ViewModel for login (e.g., LoginViewModel)
+            // and pass it back to the View in case of errors.
+            // For now, we'll stick to the current structure but acknowledge this.
+            // var model = new LoginViewModel { Email = email, RememberMe = rememberMe }; // If we had a ViewModel
+
+            if (ModelState.IsValid) // This check remains, though its utility is limited without a ViewModel
             {
-                var result = await _signInManager.PasswordSignInAsync(email, password, rememberMe, lockoutOnFailure: false);
-                if (result.Succeeded)
+                var user = await _userManager.FindByEmailAsync(email);
+                if (user != null)
                 {
-                    if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                    // Now try to sign in with the found user's UserName
+                    var result = await _signInManager.PasswordSignInAsync(user.UserName, password, rememberMe, lockoutOnFailure: false);
+                    // Alternatively, if supported and preferred (usually PasswordSignInAsync takes username string):
+                    // var result = await _signInManager.PasswordSignInAsync(user, password, rememberMe, lockoutOnFailure: false);
+
+                    if (result.Succeeded)
                     {
-                        return Redirect(returnUrl);
-                    }
-                    else
-                    {
-                        return RedirectToAction("Index", "Home");
+                        // _logger.LogInformation($"User {user.UserName} logged in."); // Example logging
+                        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                        {
+                            return Redirect(returnUrl);
+                        }
+                        else
+                        {
+                            return RedirectToAction("Index", "Home");
+                        }
                     }
                 }
-                else
-                {
-                    ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                    return View();
-                }
+
+                // If user is null or result is not Succeeded (and not handled by other Identity states like lockout/2FA if they were enabled)
+                // _logger.LogWarning($"Failed login attempt for email {email}."); // Example logging
+                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
+                // return View(model); // If using a ViewModel
+                return View(); // Current structure
             }
-            return View();
+
+            // return View(model); // If using a ViewModel
+            return View(); // Current structure
         }
 
         // POST: /Account/Logout
