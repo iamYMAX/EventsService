@@ -2,6 +2,7 @@ using EventsService.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging; // Added for ILogger
 
 namespace EventsService.Controllers
 {
@@ -10,15 +11,18 @@ namespace EventsService.Controllers
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
         private readonly RoleManager<Role> _roleManager;
+        private readonly ILogger<AccountController> _logger; // Added logger
 
         public AccountController(
             UserManager<User> userManager,
             SignInManager<User> signInManager,
-            RoleManager<Role> roleManager)
+            RoleManager<Role> roleManager,
+            ILogger<AccountController> logger) // Add logger
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
+            _logger = logger; // Assign logger
         }
 
         // GET: /Account/Register
@@ -82,14 +86,13 @@ namespace EventsService.Controllers
                 var user = await _userManager.FindByEmailAsync(email);
                 if (user != null)
                 {
-                    // Now try to sign in with the found user's UserName
-                    var result = await _signInManager.PasswordSignInAsync(user.UserName, password, rememberMe, lockoutOnFailure: false);
-                    // Alternatively, if supported and preferred (usually PasswordSignInAsync takes username string):
-                    // var result = await _signInManager.PasswordSignInAsync(user, password, rememberMe, lockoutOnFailure: false);
+                    var roles = await _userManager.GetRolesAsync(user);
+                    _logger.LogInformation($"User {user.UserName} (Email: {email}) attempting to log in. Roles: [{string.Join(", ", roles)}]");
 
+                    var result = await _signInManager.PasswordSignInAsync(user.UserName, password, rememberMe, lockoutOnFailure: false);
                     if (result.Succeeded)
                     {
-                        // _logger.LogInformation($"User {user.UserName} logged in."); // Example logging
+                        _logger.LogInformation($"User {user.UserName} logged in successfully.");
                         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                         {
                             return Redirect(returnUrl);
@@ -99,12 +102,18 @@ namespace EventsService.Controllers
                             return RedirectToAction("Index", "Home");
                         }
                     }
+                    else // Login failed for known user
+                    {
+                        _logger.LogWarning($"Failed login attempt for user {user.UserName}. Result: {result}");
+                    }
+                }
+                else // User not found
+                {
+                    _logger.LogWarning($"Login attempt for unknown email: {email}");
                 }
 
-                // If user is null or result is not Succeeded (and not handled by other Identity states like lockout/2FA if they were enabled)
-                // _logger.LogWarning($"Failed login attempt for email {email}."); // Example logging
+                // If we reach here, login was unsuccessful (either user not found or password mismatch)
                 ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                // return View(model); // If using a ViewModel
                 return View(); // Current structure
             }
 

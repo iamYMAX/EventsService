@@ -75,11 +75,23 @@ namespace EventsService.Controllers
             var viewModel = new CreateOrderViewModel
             {
                 Clients = new SelectList(await _context.Clients.OrderBy(c => c.Name).ToListAsync(), "Id", "Name"),
-                SalesRepresentatives = new SelectList(await _userManager.GetUsersInRoleAsync("SalesRepresentative"), "Id", "UserName"),
+                // SalesRepresentatives will be populated below
                 Products = new MultiSelectList(await _context.Products.OrderBy(p => p.Name).ToListAsync(), "Id", "Name"),
                 OrderDate = DateTime.UtcNow,
                 Status = OrderStatus.New
             };
+
+            var salesRepUsers = await _userManager.GetUsersInRoleAsync("SalesRepresentative");
+            var salesRepListItems = salesRepUsers.Select(user => new SelectListItem
+            {
+                Value = user.Id.ToString(),
+                Text = string.IsNullOrWhiteSpace(user.LastName) && string.IsNullOrWhiteSpace(user.FirstName)
+                       ? user.UserName
+                       : $"{user.LastName} {user.FirstName} ({user.Position})"
+            }).OrderBy(item => item.Text).ToList();
+
+            viewModel.SalesRepresentatives = new SelectList(salesRepListItems, "Value", "Text");
+
             return View(viewModel);
         }
 
@@ -128,8 +140,19 @@ namespace EventsService.Controllers
 
             // If model state is invalid, re-populate dropdowns
             viewModel.Clients = new SelectList(await _context.Clients.OrderBy(c => c.Name).ToListAsync(), "Id", "Name", viewModel.ClientId);
-            viewModel.SalesRepresentatives = new SelectList(await _userManager.GetUsersInRoleAsync("SalesRepresentative"), "Id", "UserName", viewModel.SalesRepresentativeId);
+            // viewModel.SalesRepresentatives will be populated below
             viewModel.Products = new MultiSelectList(await _context.Products.OrderBy(p => p.Name).ToListAsync(), "Id", "Name", viewModel.SelectedProductIds);
+
+            var salesRepUsersForPost = await _userManager.GetUsersInRoleAsync("SalesRepresentative");
+            var salesRepListItemsForPost = salesRepUsersForPost.Select(user => new SelectListItem
+            {
+                Value = user.Id.ToString(),
+                Text = string.IsNullOrWhiteSpace(user.LastName) && string.IsNullOrWhiteSpace(user.FirstName)
+                       ? user.UserName
+                       : $"{user.LastName} {user.FirstName} ({user.Position})"
+            }).OrderBy(item => item.Text).ToList();
+            viewModel.SalesRepresentatives = new SelectList(salesRepListItemsForPost, "Value", "Text", viewModel.SalesRepresentativeId);
+
             return View(viewModel);
         }
     }

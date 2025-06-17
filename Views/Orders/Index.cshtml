@@ -32,7 +32,26 @@
             <tr>
                 <td>@Html.DisplayFor(modelItem => item.Id)</td>
                 <td>@Html.DisplayFor(modelItem => item.Client.Name)</td>
-                <td>@(item.SalesRepresentative != null ? Html.DisplayFor(modelItem => item.SalesRepresentative.UserName) : "Не назначен")</td>
+                <td>
+                    @if (item.SalesRepresentative != null)
+                    {
+                        string lastName = item.SalesRepresentative.LastName ?? "";
+                        string firstName = item.SalesRepresentative.FirstName ?? "";
+                        string position = item.SalesRepresentative.Position ?? "";
+                        string userName = item.SalesRepresentative.UserName ?? "N/A";
+
+                        string display = $"{lastName} {firstName} ({position})".Trim();
+                        if (display == "()" || string.IsNullOrWhiteSpace(display.Replace("()", ""))) // Check if only parenthesis are left or if it's effectively empty
+                        {
+                            display = userName;
+                        }
+                        @Html.DisplayFor(modelItem => display)
+                    }
+                    else
+                    {
+                        <text>Не назначен</text>
+                    }
+                </td>
                 <td>@item.OrderDate.ToString("dd.MM.yyyy HH:mm")</td>
                 <td>@Html.DisplayFor(modelItem => item.Status)</td>
                 <td>

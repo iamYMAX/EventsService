@@ -4,6 +4,7 @@ using EventsService.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering; // Added for SelectList and MultiSelectList
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
@@ -86,7 +87,15 @@ namespace EventsService.Controllers
                     return View(model);
                 }
 
-                var user = new User { UserName = model.Email, Email = model.Email, EmailConfirmed = true }; // EmailConfirmed = true for simplicity for now
+                var user = new User
+                {
+                    UserName = model.Email,
+                    Email = model.Email,
+                    EmailConfirmed = true, // EmailConfirmed = true for simplicity for now
+                    FirstName = model.FirstName,
+                    LastName = model.LastName,
+                    Position = model.Position
+                };
                 var result = await _userManager.CreateAsync(user, model.Password);
 
                 if (result.Succeeded)
@@ -178,6 +187,9 @@ namespace EventsService.Controllers
                 Id = user.Id,
                 UserName = user.UserName ?? string.Empty,
                 Email = user.Email ?? string.Empty,
+                FirstName = user.FirstName ?? string.Empty,
+                LastName = user.LastName ?? string.Empty,
+                Position = user.Position ?? string.Empty,
                 CurrentRoles = userRoles.ToList() // For display
             };
 
@@ -201,6 +213,9 @@ namespace EventsService.Controllers
 
                 user.UserName = model.UserName;
                 user.Email = model.Email;
+                user.FirstName = model.FirstName;
+                user.LastName = model.LastName;
+                user.Position = model.Position;
                 // Consider EmailConfirmed status if it's part of your workflow
 
                 var updateResult = await _userManager.UpdateAsync(user);

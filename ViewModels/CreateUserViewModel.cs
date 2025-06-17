@@ -11,6 +11,18 @@ namespace EventsService.ViewModels
         [Display(Name = "Email")]
         public string Email { get; set; } = string.Empty;
 
+        [Required(ErrorMessage = "Имя обязательно для заполнения.")]
+        [Display(Name = "Имя")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Фамилия обязательна для заполнения.")]
+        [Display(Name = "Фамилия")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Должность обязательна для заполнения.")]
+        [Display(Name = "Должность")]
+        public string Position { get; set; } = string.Empty;
+
         [Required(ErrorMessage = "Пароль обязателен.")]
         [StringLength(100, ErrorMessage = "{0} должен содержать как минимум {2} и максимум {1} символов.", MinimumLength = 6)]
         [DataType(DataType.Password)]
