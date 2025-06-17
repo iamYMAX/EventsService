@@ -1,0 +1,43 @@
+@model IEnumerable<EventsService.Models.Product>
+
+@{ ViewData["Title"] = "Услуги и товары"; }
+
+<h1>@ViewData["Title"]</h1>
+
+<p><a asp-action="Create" class="btn btn-primary mt-2 mb-3">Добавить новый товар/услугу</a></p>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info mt-3" role="alert">
+        Список товаров и услуг пуст. Вы можете <a asp-action="Create" class="alert-link">добавить первый товар или услугу</a>.
+    </div>
+}
+else
+{
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.First().Name)</th>
+                <th>@Html.DisplayNameFor(model => model.First().Description)</th>
+                <th>@Html.DisplayNameFor(model => model.First().Price)</th>
+                <th>Действия</th>
+            </tr>
+        </thead>
+        <tbody>
+    @foreach (var item in Model) {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.Name)</td>
+                <td>@Html.DisplayFor(modelItem => item.Description)</td>
+                <td>@item.Price.ToString("C2")</td> @* Format as currency *@
+                <td>
+                    <div class="btn-group" role="group">
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Изменить</a>
+                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">Детали</a>
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Удалить</a>
+                    </div>
+                </td>
+            </tr>
+    }
+        </tbody>
+    </table>
+}

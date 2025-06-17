@@ -1,4 +1,9 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Identity
+@using EventsService.Models
+@inject SignInManager<User> SignInManager
+@inject UserManager<User> UserManager
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -19,13 +24,82 @@
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+                        @if (SignInManager.IsSignedIn(User))
+                        {
+                            // Расписание (Schedule) - Visible to all authenticated users
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Расписание</a>
+                            </li>
+
+                            // Заявки (Orders) - Visible to Admin, Manager, SalesRepresentative, Client
+                            @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("SalesRepresentative") || User.IsInRole("Client"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Orders" asp-action="Index">Заявки</a>
+                                </li>
+                            }
+
+                            // Сотрудники (Employees/Users) - Visible to Admin
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Users" asp-action="Index">Сотрудники</a>
+                                </li>
+                            }
+
+                            // Клиенты (Clients) - Visible to Admin, Manager
+                            @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Clients" asp-action="Index">Клиенты</a>
+                                </li>
+                            }
+
+                            // Услуги и товары (Services and Products) - Visible to Admin, Manager
+                            @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Products" asp-action="Index">Услуги и товары</a>
+                                </li>
+                            }
+
+                            // Чек-листы (Checklists) - Visible to Admin, Manager, SalesRepresentative
+                            @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("SalesRepresentative"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Checklists" asp-action="Index">Чек-листы</a>
+                                </li>
+                            }
+
+                            // Статистика (Statistics) - Visible to Admin, Manager
+                            @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Statistics" asp-action="Index">Статистика</a>
+                                </li>
+                            }
+
+                            // Настройки (Settings) - Visible to Admin
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-controller="Settings" asp-action="Index">Настройки</a>
+                                </li>
+                            }
+                        }
+                        else
+                        {
+                            // Optionally, add links for non-authenticated users here if needed,
+                            // besides what _LoginPartial will show. For example, a public "About" page.
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            </li>
+                             <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            </li>
+                        }
                     </ul>
+                    <partial name="_LoginPartial" />
                 </div>
             </div>
         </nav>

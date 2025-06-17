@@ -1,0 +1,27 @@
+@model EventsService.Models.Product
+
+@{ ViewData["Title"] = "Удаление товара/услуги"; }
+
+<h1>@ViewData["Title"]</h1>
+
+@* Display validation errors from controller, e.g., when product is in use *@
+<div asp-validation-summary="ModelOnly" class="text-danger mt-2"></div>
+
+<h3 class="text-danger mt-3">Вы уверены, что хотите удалить этот товар/услугу?</h3>
+<div class="mt-3">
+    <h4>@Html.DisplayFor(model => model.Name)</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Description)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Description)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Price)</dt>
+        <dd class="col-sm-9">@Model.Price.ToString("C2")</dd> @* Format as currency *@
+    </dl>
+
+    <form asp-action="Delete" class="mt-4">
+        <input type="hidden" asp-for="Id" />
+        <input type="submit" value="Удалить" class="btn btn-danger me-2" />
+        <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>

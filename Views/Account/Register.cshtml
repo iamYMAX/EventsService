@@ -1,0 +1,35 @@
+@{
+    ViewData["Title"] = "Register";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<div class="row">
+    <div class="col-md-4">
+        <form asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
+            <h4>Create a new account.</h4>
+            <hr />
+            @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+            <div class="form-group mb-3">
+                <label for="email">Email</label>
+                <input id="email" name="email" class="form-control" />
+                @* Replace with: <span asp-validation-for="Input.Email" class="text-danger"></span> *@
+            </div>
+            <div class="form-group mb-3">
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" class="form-control" />
+                @* Replace with: <span asp-validation-for="Input.Password" class="text-danger"></span> *@
+            </div>
+            <div class="form-group mb-3">
+                <label for="confirmPassword">Confirm Password</label>
+                <input id="confirmPassword" name="confirmPassword" type="password" class="form-control" />
+                @* Replace with: <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span> *@
+            </div>
+            <button type="submit" class="btn btn-primary">Register</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

@@ -1,0 +1,35 @@
+@model EventsService.Models.Client
+
+@{ ViewData["Title"] = "Детали клиента"; }
+
+<h1>@ViewData["Title"]</h1>
+
+<div>
+    <h4>@Html.DisplayFor(model => model.Name)</h4>
+    <hr />
+    <dl class="row">
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.PhoneNumber)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.PhoneNumber)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Organization)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Organization)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Email)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Email)</dd>
+
+        @if (Model.User != null)
+        {
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User.UserName)</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.User.UserName)</dd>
+        }
+        else
+        {
+            <dt class="col-sm-3">Связанный пользователь</dt>
+            <dd class="col-sm-9">Нет</dd>
+        }
+    </dl>
+</div>
+<div class="mt-3">
+    <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-primary me-2">Изменить</a>
+    <a asp-action="Index" class="btn btn-secondary">Назад к списку</a>
+</div>

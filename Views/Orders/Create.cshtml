@@ -1,0 +1,60 @@
+@model EventsService.ViewModels.CreateOrderViewModel
+
+@{
+    ViewData["Title"] = "Создание новой заявки";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<hr />
+<div class="row">
+    <div class="col-md-8"> @* Increased col width for better layout *@
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <div class="form-group mb-3">
+                <label asp-for="ClientId" class="control-label"></label>
+                <select asp-for="ClientId" class="form-select" asp-items="Model.Clients"> @* Changed to form-select for BS5 *@
+                    <option value="">-- Выберите клиента --</option>
+                </select>
+                <span asp-validation-for="ClientId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="SalesRepresentativeId" class="control-label"></label>
+                <select asp-for="SalesRepresentativeId" class="form-select" asp-items="Model.SalesRepresentatives"> @* Changed to form-select for BS5 *@
+                    <option value="">-- Не назначать --</option>
+                </select>
+                <span asp-validation-for="SalesRepresentativeId" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="OrderDate" class="control-label"></label>
+                <input asp-for="OrderDate" class="form-control" type="datetime-local" /> @* Use datetime-local for better UX *@
+                <span asp-validation-for="OrderDate" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Status" class="control-label"></label>
+                <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<EventsService.Models.OrderStatus>()"></select> @* Changed to form-select for BS5 *@
+                <span asp-validation-for="Status" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="SelectedProductIds" class="control-label"></label>
+                <select asp-for="SelectedProductIds" class="form-select" asp-items="Model.Products" multiple="multiple" size="8"></select> @* Changed to form-select for BS5, increased size *@
+                <span asp-validation-for="SelectedProductIds" class="text-danger"></span>
+                <small class="form-text text-muted">Удерживайте Ctrl (или Cmd на Mac), чтобы выбрать несколько позиций.</small>
+            </div>
+
+            <div class="form-group mt-4"> @* Increased top margin for button spacing *@
+                <input type="submit" value="Создать заявку" class="btn btn-success me-2" /> @* Added margin for spacing *@
+                <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

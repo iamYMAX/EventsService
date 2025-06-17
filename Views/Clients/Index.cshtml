@@ -1,0 +1,47 @@
+@model IEnumerable<EventsService.Models.Client>
+
+@{ ViewData["Title"] = "Клиенты"; }
+
+<h1>@ViewData["Title"]</h1>
+
+<p><a asp-action="Create" class="btn btn-primary mt-2 mb-3">Добавить нового клиента</a></p>
+
+<table class="table table-striped table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>@Html.DisplayNameFor(model => model.First().Name)</th>
+            <th>@Html.DisplayNameFor(model => model.First().PhoneNumber)</th>
+            <th>@Html.DisplayNameFor(model => model.First().Organization)</th>
+            <th>@Html.DisplayNameFor(model => model.First().Email)</th>
+            <th>Связанный пользователь</th>
+            <th>Действия</th>
+        </tr>
+    </thead>
+    <tbody>
+@if (Model.Any())
+{
+    foreach (var item in Model) {
+            <tr>
+                <td>@Html.DisplayFor(modelItem => item.Name)</td>
+                <td>@Html.DisplayFor(modelItem => item.PhoneNumber)</td>
+                <td>@Html.DisplayFor(modelItem => item.Organization)</td>
+                <td>@Html.DisplayFor(modelItem => item.Email)</td>
+                <td>@Html.DisplayFor(modelItem => item.User.UserName)</td>
+                <td>
+                    <div class="btn-group" role="group">
+                        <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Изменить</a>
+                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info">Детали</a>
+                        <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger">Удалить</a>
+                    </div>
+                </td>
+            </tr>
+    }
+}
+else
+{
+    <tr>
+        <td colspan="6" class="text-center">Нет доступных клиентов.</td>
+    </tr>
+}
+    </tbody>
+</table>
