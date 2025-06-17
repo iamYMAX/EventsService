@@ -51,7 +51,9 @@ namespace EventsService.Controllers
                 }
                 else
                 {
-                    ordersQuery = Enumerable.Empty<Order>().AsQueryable();
+                    // If client profile does not exist for this user, they have no orders.
+                    // Return an empty list of OrderViewModels directly.
+                    return View(new List<OrderViewModel>());
                 }
             }
             else if (User.IsInRole("SalesRepresentative"))
