@@ -1,32 +1,34 @@
-using EventsService.Data;
-using EventsService.Models; // For User, Client, Order
-using EventsService.ViewModels; // Added using statement
+using EventsService.Data; // For ApplicationDbContext
+using EventsService.Models; // For User
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity; // For UserManager
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore; // For ToListAsync, Include, etc.
 using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic; // For List
 
-// Placeholder for OrderScheduleViewModel - will be formally created in next step
-// For now, the controller will project to an anonymous type or a simple local class.
+// It's anticipated that a ViewModel will be needed for the calendar event data.
+// For now, this controller will just be set up. Data preparation is next.
+// namespace EventsService.ViewModels { /* CalendarEventViewModel might go here */ }
+
 namespace EventsService.Controllers
 {
-    [Authorize]
-    public class ScheduleController : Controller
+    [Authorize] // Require login for all actions in this controller
+    public class StatisticsController : Controller
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<User> _userManager;
 
-        public ScheduleController(ApplicationDbContext context, UserManager<User> userManager)
+        public StatisticsController(ApplicationDbContext context, UserManager<User> userManager)
         {
             _context = context;
             _userManager = userManager;
         }
 
-        // GET: Schedule or Schedule/Index
+        // GET: Statistics or Statistics/Index
+        // Authorization for this Index action will be refined later to include Client and SalesRep
         [Authorize(Roles = "Admin,Manager,SalesRepresentative,Client")]
         public async Task<IActionResult> Index()
         {
@@ -36,9 +38,7 @@ namespace EventsService.Controllers
             IQueryable<Order> ordersQuery = _context.Orders
                 .Where(o => o.ScheduledServiceDateTime != null) // Only orders with a schedule date
                 .Include(o => o.Client)
-                .Include(o => o.SalesRepresentative)
-                .Include(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product); // For OrderSummary
+                .Include(o => o.SalesRepresentative);
 
             // Apply role-based filtering
             if (User.IsInRole("Admin") || User.IsInRole("Manager"))
@@ -71,24 +71,22 @@ namespace EventsService.Controllers
                 .OrderBy(o => o.ScheduledServiceDateTime) // Order by the schedule date
                 .ToListAsync();
 
-            // Map to ViewModel (using the local placeholder class for now)
-            var viewModels = scheduledOrders.Select(o => new OrderScheduleViewModel // Changed to OrderScheduleViewModel
-            {
-                OrderId = o.Id,
-                ScheduledServiceDateTime = o.ScheduledServiceDateTime.Value, // .Value because we filtered for non-null
-                ClientName = o.Client?.Name ?? "N/A",
-                SalesRepresentativeName = o.SalesRepresentative != null ?
-                    (string.IsNullOrWhiteSpace(o.SalesRepresentative.FirstName) && string.IsNullOrWhiteSpace(o.SalesRepresentative.LastName) ?
-                        o.SalesRepresentative.UserName :
-                        (o.SalesRepresentative.FirstName + " " + o.SalesRepresentative.LastName).Trim())
-                    : "N/A",
-                OrderStatus = o.Status.ToString(),
-                OrderSummary = o.OrderItems != null && o.OrderItems.Any() ?
-                    string.Join(", ", o.OrderItems.Select(oi => oi.Product?.Name ?? "Товар без имени").Take(2)) + (o.OrderItems.Count > 2 ? "..." : "") :
-                    "Нет позиций"
+            // Map to a structure suitable for FullCalendar or other calendar libraries
+            // This typically involves properties like id, title, start, end (optional), url.
+            var calendarEvents = scheduledOrders.Select(o => new {
+                id = o.Id.ToString(), // Calendar event ID (can be OrderId)
+                title = $"Заявка #{o.Id} - {(o.Client?.Name ?? "Без клиента")}", // Event title
+                start = o.ScheduledServiceDateTime.Value.ToString("o"), // ISO 8601 format for start time
+                // end = o.ScheduledServiceDateTime.Value.AddHours(1).ToString("o"), // Optional: if events have a duration, otherwise they are point-in-time
+                url = Url.Action("Details", "Orders", new { id = o.Id }) // URL to navigate to when event is clicked
+                // You can add more custom properties here if your calendar needs them (e.g., color, description)
             }).ToList();
 
-            return View(viewModels);
+            // Pass the JSON serialized events to the View.
+            // The View will then use JavaScript to initialize the calendar with this data.
+            ViewBag.CalendarEventsJson = System.Text.Json.JsonSerializer.Serialize(calendarEvents);
+
+            return View();
         }
     }
 }

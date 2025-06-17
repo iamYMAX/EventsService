@@ -71,8 +71,8 @@
                                 </li>
                             }
 
-                            // Статистика (Statistics) - Visible to Admin, Manager
-                            @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                            // Статистика (Statistics / Order Calendar) - Visible to Admin, Manager, SalesRepresentative, Client
+                            @if (User.IsInRole("Admin") || User.IsInRole("Manager") || User.IsInRole("SalesRepresentative") || User.IsInRole("Client"))
                             {
                                 <li class="nav-item">
                                     <a class="nav-link text-dark" asp-area="" asp-controller="Statistics" asp-action="Index">Статистика</a>
