@@ -23,7 +23,7 @@ namespace EventsService.Models
         [ForeignKey("ClientId")]
         public virtual Client? Client { get; set; }
 
-        public int? SalesRepresentativeId { get; set; } // Nullable if not always assigned immediately
+        public string? SalesRepresentativeId { get; set; } // Nullable if not always assigned immediately; Changed to string to align with User.Id
         [ForeignKey("SalesRepresentativeId")]
         public virtual User? SalesRepresentative { get; set; }
 

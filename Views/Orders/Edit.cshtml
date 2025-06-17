@@ -1,7 +1,7 @@
-@model EventsService.ViewModels.CreateOrderViewModel
+@model EventsService.ViewModels.EditOrderViewModel
 
 @{
-    ViewData["Title"] = "Создание новой заявки";
+    ViewData["Title"] = "Редактирование заявки #" + Model.Id;
 }
 
 <h1>@ViewData["Title"]</h1>
@@ -9,8 +9,9 @@
 <hr />
 <div class="row">
     <div class="col-md-8">
-        <form asp-action="Create">
+        <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="Id" /> <!-- Important: Order ID -->
 
             <div class="form-group mb-3">
                 <label asp-for="ClientId" class="control-label"></label>
@@ -36,7 +37,7 @@
 
             <div class="form-group mb-3">
                 <label asp-for="Status" class="control-label"></label>
-                <select asp-for="Status" class="form-select" asp-items="Html.GetEnumSelectList<EventsService.Models.OrderStatus>()"></select>
+                <select asp-for="Status" class="form-select" asp-items="Model.Statuses"></select>
                 <span asp-validation-for="Status" class="text-danger"></span>
             </div>
 
@@ -50,7 +51,7 @@
             </div>
 
             <div class="form-group mt-4">
-                <input type="submit" value="Создать заявку" class="btn btn-success me-2" />
+                <input type="submit" value="Сохранить изменения" class="btn btn-success me-2" />
                 <a asp-action="Index" class="btn btn-secondary">Отмена</a>
             </div>
         </form>
@@ -62,26 +63,22 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         $(document).ready(function () {
-            // Ensure productDetailsForJs is correctly initialized.
-            // The null check in the original file was good.
             const productDetailsForJs = @Html.Raw(Json.Serialize(Model.ProductDetailsForJs ?? new List<EventsService.ViewModels.ProductInfoForJs>()));
-            let itemIndex = 0; // Used for unique naming if not re-indexing. Re-indexing is better.
 
             function reindexOrderItems() {
                 $('#orderItemsContainer .order-item-row').each(function(idx, row) {
                     $(row).find('.product-select').attr('name', `OrderItems[${idx}].ProductId`);
                     $(row).find('.quantity-input').attr('name', `OrderItems[${idx}].Quantity`);
-                    // Update validation message 'for' attributes if they are dynamically generated (not shown in current snippet but good practice)
                 });
             }
 
             function updatePriceForRow(selectElement) {
                 const selectedProductId = $(selectElement).val();
                 const priceInput = $(selectElement).closest('.order-item-row').find('.product-price-display');
-                const selectedProductDetail = productDetailsForJs.find(p => p.value == selectedProductId); // Ensure 'value' matches casing from ProductInfoForJs serialization
+                const selectedProductDetail = productDetailsForJs.find(p => p.value == selectedProductId);
 
                 if (selectedProductDetail) {
-                    priceInput.val(selectedProductDetail.price.toFixed(2)); // Ensure 'price' matches casing
+                    priceInput.val(selectedProductDetail.price.toFixed(2));
                 } else {
                     priceInput.val('');
                 }
@@ -89,14 +86,15 @@
 
             function addOrderItemRow(item) {
                 const currentItemCount = $('#orderItemsContainer .order-item-row').length;
-                const productId = item ? item.ProductId : "";
+                const productId = item ? item.ProductId : ""; // ProductId from item will be int, ensure comparison with p.value (string) is ok
                 const quantity = item ? item.Quantity : 1;
 
                 let productOptions = '<option value="">-- Select Product --</option>';
                 if (productDetailsForJs && productDetailsForJs.length > 0) {
                     productDetailsForJs.forEach(p => {
-                        // Ensure p.value and p.text match the casing from ProductInfoForJs (Value, Text) after serialization
-                        productOptions += `<option value="${p.value}" ${p.value == productId ? "selected" : ""}>${p.text}</option>`;
+                        // p.value is string (from ProductInfoForJs.Value which is p.Id.ToString())
+                        // productId from item is int. Convert for comparison.
+                        productOptions += `<option value="${p.value}" ${p.value == String(productId) ? "selected" : ""}>${p.text}</option>`;
                     });
                 } else {
                     productOptions = '<option value="">-- No products available --</option>';
@@ -130,26 +128,31 @@
 
             $('#orderItemsContainer').on('click', '.remove-item', function () {
                 $(this).closest('.order-item-row').remove();
-                reindexOrderItems(); // Call re-index after removal
+                reindexOrderItems();
             });
 
             $('#orderItemsContainer').on('change', '.product-select', function () {
                 updatePriceForRow(this);
             });
 
-            // Initial population of rows if Model.OrderItems exists (e.g., validation failed, page reloaded)
-            let initialItemCountGlobal = 0; // Renamed to avoid any conflict, ensure it's accessible
+            // Populate existing order items for editing
+            let initialItemCount = 0;
             @if (Model.OrderItems != null && Model.OrderItems.Any())
             {
                 @foreach (var item in Model.OrderItems)
                 {
-                    @:addOrderItemRow({ ProductId: "@item.ProductId.ToString()", Quantity: @item.Quantity });
-                    initialItemCountGlobal++;
+                    // Ensure ProductId is passed as string to match option values if they are strings
+                    @:addOrderItemRow({ ProductId: @item.ProductId, Quantity: @item.Quantity }); // Pass ProductId as number, it will be converted to string for comparison in addOrderItemRow
+                    initialItemCount++;
                 }
             }
 
-            if (initialItemCountGlobal === 0) {
-                addOrderItemRow(); // Add one empty row by default for new orders
+            // If it's an edit form and there were no items (e.g. all removed previously, though MinLength should prevent this on save)
+            // or if somehow OrderItems is null/empty on an existing order, add one blank row.
+            // For a 'Create' form, this is usually desired. For 'Edit', it depends on business rules.
+            // Let's keep it consistent with Create: if no items, add one blank row.
+            if (initialItemCount === 0) {
+                addOrderItemRow();
             }
         });
     </script>

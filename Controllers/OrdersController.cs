@@ -311,5 +311,234 @@ namespace EventsService.Controllers
 
             return View(orderViewModel);
         }
+
+        // GET: Orders/Edit/5
+        [Authorize(Roles = "Admin,Manager,SalesRepresentative")] // Adjust roles as needed
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var order = await _context.Orders
+                .Include(o => o.Client)
+                .Include(o => o.SalesRepresentative)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (order == null)
+            {
+                return NotFound();
+            }
+
+            // Authorization Check: Ensure user can edit this order
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null) return Challenge(); // Should not happen if [Authorize] is effective
+
+            bool canEdit = false;
+            if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+            {
+                canEdit = true;
+            }
+            else if (User.IsInRole("SalesRepresentative") && order.SalesRepresentativeId == currentUser.Id)
+            {
+                canEdit = true;
+            }
+
+            if (!canEdit)
+            {
+                // Consider a more user-friendly "Access Denied" page or message
+                // For now, Forbid() is clear for developers.
+                return Forbid();
+            }
+
+            var viewModel = new EditOrderViewModel
+            {
+                Id = order.Id,
+                ClientId = order.ClientId,
+                SalesRepresentativeId = order.SalesRepresentativeId, // Already string? due to model change
+                OrderDate = order.OrderDate,
+                Status = order.Status,
+                OrderItems = order.OrderItems.Select(oi => new OrderItemViewModel
+                {
+                    ProductId = oi.ProductId,
+                    Quantity = oi.Quantity,
+                    ProductName = oi.Product?.Name, // Product might be null if data integrity issue
+                    ProductPrice = oi.PriceAtTimeOfOrder // Or oi.Product.Price if you want current price
+                }).ToList()
+            };
+
+            // Populate SelectLists and ProductDetailsForJs for the ViewModel
+            viewModel.Clients = new SelectList(await _context.Clients.OrderBy(c => c.Name).ToListAsync(), "Id", "Name", viewModel.ClientId);
+
+            var salesRepUsers = await _userManager.GetUsersInRoleAsync("SalesRepresentative");
+            var salesRepSelectListItems = new List<SelectListItem>();
+            foreach (var user in salesRepUsers.OrderBy(u => u.UserName))
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                var primaryRole = roles.FirstOrDefault() ?? "Сотрудник";
+                salesRepSelectListItems.Add(new SelectListItem
+                {
+                    Value = user.Id.ToString(), // User ID is string
+                    Text = $"{user.UserName} ({primaryRole})"
+                });
+            }
+            viewModel.SalesRepresentatives = new SelectList(salesRepSelectListItems, "Value", "Text", viewModel.SalesRepresentativeId);
+
+            viewModel.Statuses = new SelectList(Enum.GetValues(typeof(OrderStatus)).Cast<OrderStatus>().Select(e => new SelectListItem { Value = e.ToString(), Text = e.ToString() }), "Value", "Text", viewModel.Status.ToString());
+
+            var products = await _context.Products.OrderBy(p => p.Name).ToListAsync();
+            // For ProductList SelectList, we need Value and Text. ProductInfoForJs has these.
+            var productsForJs = products.Select(p => new ProductInfoForJs(p.Id.ToString(), p.Name, p.Price)).ToList();
+            viewModel.ProductList = new SelectList(productsForJs, "Value", "Text");
+            viewModel.ProductDetailsForJs = productsForJs;
+
+            return View(viewModel); // View "Edit.cshtml" will be created next
+        }
+
+        // POST: Orders/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Manager,SalesRepresentative")] // Ensure roles match GET
+        public async Task<IActionResult> Edit(int id, EditOrderViewModel viewModel)
+        {
+            if (id != viewModel.Id)
+            {
+                return NotFound(); // Or BadRequest()
+            }
+
+            // Manually check MinLength for OrderItems if client-side validation might be bypassed
+            if (viewModel.OrderItems == null || !viewModel.OrderItems.Any())
+            {
+                ModelState.AddModelError("OrderItems", "Please add at least one product to the order.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                // If model state is invalid, re-populate dropdowns and return view
+                await RepopulateViewModelForEditError(viewModel);
+                return View(viewModel);
+            }
+
+            var orderToUpdate = await _context.Orders
+                .Include(o => o.OrderItems) // Include existing order items
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (orderToUpdate == null)
+            {
+                return NotFound();
+            }
+
+            // Authorization Check (similar to GET)
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null) return Challenge();
+
+            bool canEdit = false;
+            if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+            {
+                canEdit = true;
+            }
+            else if (User.IsInRole("SalesRepresentative") && orderToUpdate.SalesRepresentativeId == currentUser.Id)
+            {
+                canEdit = true;
+            }
+
+            if (!canEdit)
+            {
+                return Forbid();
+            }
+
+            // Update scalar properties of the order
+            orderToUpdate.ClientId = viewModel.ClientId;
+            orderToUpdate.OrderDate = viewModel.OrderDate;
+            orderToUpdate.Status = viewModel.Status;
+
+            if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+            {
+                orderToUpdate.SalesRepresentativeId = viewModel.SalesRepresentativeId;
+            }
+            // SalesRep cannot change assignment via this Edit action. Their ID is preserved if they are editing.
+
+            // Update OrderItems: Strategy - Remove existing and add new ones from ViewModel
+            _context.OrderItems.RemoveRange(orderToUpdate.OrderItems); // Clear existing items for this order
+            orderToUpdate.OrderItems = new List<OrderItem>(); // Initialize new collection
+
+            if (viewModel.OrderItems != null && viewModel.OrderItems.Any())
+            {
+                foreach (var itemVM in viewModel.OrderItems)
+                {
+                    var product = await _context.Products.FindAsync(itemVM.ProductId);
+                    if (product != null)
+                    {
+                        orderToUpdate.OrderItems.Add(new OrderItem
+                        {
+                            OrderId = orderToUpdate.Id, // Ensure OrderId is set (though EF might handle it)
+                            ProductId = product.Id,
+                            Quantity = itemVM.Quantity,
+                            PriceAtTimeOfOrder = product.Price // Consider if price can change or if original price was stored
+                        });
+                    }
+                    else
+                    {
+                        ModelState.AddModelError("", $"Product with ID {itemVM.ProductId} not found. Please correct the order items.");
+                    }
+                }
+            }
+
+            if (!ModelState.IsValid) // Re-check model state after processing items
+            {
+                await RepopulateViewModelForEditError(viewModel);
+                return View(viewModel);
+            }
+
+            try
+            {
+                //_context.Update(orderToUpdate); // Not always necessary if tracking is on
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!OrderExists(orderToUpdate.Id))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+            return RedirectToAction(nameof(Details), new { id = orderToUpdate.Id });
+        }
+
+        // Helper method to check if Order exists
+        private bool OrderExists(int id)
+        {
+            return _context.Orders.Any(e => e.Id == id);
+        }
+
+        // Helper method to repopulate ViewModel data on POST error
+        private async Task RepopulateViewModelForEditError(EditOrderViewModel viewModel)
+        {
+            viewModel.Clients = new SelectList(await _context.Clients.OrderBy(c => c.Name).ToListAsync(), "Id", "Name", viewModel.ClientId);
+
+            var salesRepUsers = await _userManager.GetUsersInRoleAsync("SalesRepresentative");
+            var salesRepSelectListItems = new List<SelectListItem>();
+            foreach (var user in salesRepUsers.OrderBy(u => u.UserName))
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                var primaryRole = roles.FirstOrDefault() ?? "Сотрудник";
+                salesRepSelectListItems.Add(new SelectListItem { Value = user.Id.ToString(), Text = $"{user.UserName} ({primaryRole})" });
+            }
+            viewModel.SalesRepresentatives = new SelectList(salesRepSelectListItems, "Value", "Text", viewModel.SalesRepresentativeId);
+
+            viewModel.Statuses = new SelectList(Enum.GetValues(typeof(OrderStatus)).Cast<OrderStatus>().Select(e => new SelectListItem { Value = e.ToString(), Text = e.ToString() }), "Value", "Text", viewModel.Status.ToString());
+
+            var products = await _context.Products.OrderBy(p => p.Name).ToListAsync();
+            var productsForJs = products.Select(p => new ProductInfoForJs(p.Id.ToString(), p.Name, p.Price)).ToList(); // Corrected to ProductInfoForJs
+            viewModel.ProductList = new SelectList(productsForJs, "Value", "Text");
+            viewModel.ProductDetailsForJs = productsForJs;
+        }
     }
 }
