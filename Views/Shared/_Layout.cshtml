@@ -39,6 +39,11 @@
                                 </li>
                             }
 
+                            // Расписание событий (Scheduled Events) - Visible to all authenticated users
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-controller="ScheduledEvents" asp-action="Index">Расписание событий</a>
+                            </li>
+
                             // Сотрудники (Employees/Users) - Visible to Admin
                             @if (User.IsInRole("Admin"))
                             {

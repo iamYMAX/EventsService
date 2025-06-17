@@ -1,0 +1,23 @@
+@model EventsService.ViewModels.ScheduledEventFormViewModel
+
+@{
+    ViewData["Title"] = "Создать новое событие";
+}
+
+<h1>@ViewData["Title"]</h1>
+<hr />
+<div class="row">
+    <div class="col-md-8">
+        <form asp-action="Create" method="post">
+            <partial name="_ScheduledEventFormPartial" model="Model" />
+            <div class="form-group mt-4">
+                <input type="submit" value="Создать" class="btn btn-primary me-2" />
+                <a asp-action="Index" class="btn btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

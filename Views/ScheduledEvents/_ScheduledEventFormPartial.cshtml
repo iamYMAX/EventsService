@@ -1,0 +1,68 @@
+@model EventsService.ViewModels.ScheduledEventFormViewModel
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+@if (Model.Id > 0) // For Edit scenario, Id might be needed, though not typically in form directly unless for display
+{
+    <input type="hidden" asp-for="Id" />
+}
+
+<div class="form-group mb-3">
+    <label asp-for="Title" class="control-label"></label>
+    <input asp-for="Title" class="form-control" />
+    <span asp-validation-for="Title" class="text-danger"></span>
+</div>
+
+<div class="form-group mb-3">
+    <label asp-for="Description" class="control-label"></label>
+    <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+    <span asp-validation-for="Description" class="text-danger"></span>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="StartTime" class="control-label"></label>
+            <input asp-for="StartTime" class="form-control" type="datetime-local" />
+            <span asp-validation-for="StartTime" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group mb-3">
+            <label asp-for="EndTime" class="control-label"></label>
+            <input asp-for="EndTime" class="form-control" type="datetime-local" />
+            <span asp-validation-for="EndTime" class="text-danger"></span>
+        </div>
+    </div>
+</div>
+<div class="text-danger" asp-validation-for="EndTime"></div> @* For cross-property validation message related to EndTime *@
+
+
+<div class="form-group mb-3">
+    <label asp-for="Location" class="control-label"></label>
+    <input asp-for="Location" class="form-control" />
+    <span asp-validation-for="Location" class="text-danger"></span>
+</div>
+
+<div class="form-group mb-3">
+    <label asp-for="UserId" class="control-label"></label>
+    <select asp-for="UserId" class="form-control" asp-items="Model.Users">
+        <option value="">-- Не выбран --</option>
+    </select>
+    <span asp-validation-for="UserId" class="text-danger"></span>
+</div>
+
+<div class="form-group mb-3">
+    <label asp-for="ClientId" class="control-label"></label>
+    <select asp-for="ClientId" class="form-control" asp-items="Model.Clients">
+        <option value="">-- Не выбран --</option>
+    </select>
+    <span asp-validation-for="ClientId" class="text-danger"></span>
+</div>
+
+<div class="form-group mb-3">
+    <label asp-for="OrderId" class="control-label"></label>
+    <select asp-for="OrderId" class="form-control" asp-items="Model.Orders">
+        <option value="">-- Не выбрана --</option>
+    </select>
+    <span asp-validation-for="OrderId" class="text-danger"></span>
+</div>

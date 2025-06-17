@@ -1,0 +1,39 @@
+@model EventsService.ViewModels.ScheduledEventViewModel
+
+@{
+    ViewData["Title"] = "Детали события: " + Model.Title;
+}
+
+<h1>@ViewData["Title"]</h1>
+<hr />
+<div>
+    <dl class="row">
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Description)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Description)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.StartTime)</dt>
+        <dd class="col-sm-9">@Model.StartTime.ToString("F")</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.EndTime)</dt>
+        <dd class="col-sm-9">@Model.EndTime.ToString("F")</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Location)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.Location)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.UserName)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.UserName)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.ClientName)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.ClientName)</dd>
+
+        <dt class="col-sm-3">@Html.DisplayNameFor(model => model.OrderId)</dt>
+        <dd class="col-sm-9">@Html.DisplayFor(model => model.OrderId)</dd>
+    </dl>
+</div>
+<div class="mt-4">
+    @if (User.IsInRole("Admin") || User.IsInRole("Manager") /* || SalesRep owns it - controller handles access */)
+    {
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary me-2">Изменить</a>
+    }
+    <a asp-action="Index" class="btn btn-secondary">Назад к расписанию</a>
+</div>
