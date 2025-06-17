@@ -243,5 +243,330 @@ namespace EventsService.Controllers
 
             return View(orderViewModel);
         }
+
+        // GET: Orders/Edit/5
+        [Authorize(Roles = "Admin,Manager,SalesRepresentative")]
+        public async Task<IActionResult> Edit(int? id)
+        {
+            if (id == null)
+            {
+                return NotFound();
+            }
+
+            var order = await _context.Orders
+                .Include(o => o.Client)
+                .Include(o => o.SalesRepresentative)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Product)
+                .FirstOrDefaultAsync(o => o.Id == id.Value); // Ensure id has value
+
+            if (order == null)
+            {
+                return NotFound();
+            }
+
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null)
+            {
+                // This should ideally not happen if [Authorize] is effective
+                // and user is authenticated.
+                return Challenge();
+            }
+
+            bool isAdmin = User.IsInRole("Admin");
+            bool isManager = User.IsInRole("Manager");
+            // Check if the current user is THE sales representative assigned to this order
+            bool isAssignedSalesRepresentative = User.IsInRole("SalesRepresentative") && order.SalesRepresentativeId == currentUser.Id;
+
+            // Authorization: Who can edit this specific order?
+            if (!isAdmin && !isManager && !isAssignedSalesRepresentative)
+            {
+                return Forbid();
+            }
+
+            // Prepare Sales Rep Select List (for changing the Sales Rep)
+            var allUsersForSalesRepDropdown = new List<User>();
+            var salesRepRoleUsers = await _userManager.GetUsersInRoleAsync("SalesRepresentative");
+            allUsersForSalesRepDropdown.AddRange(salesRepRoleUsers);
+            // Optional: Add Managers to the list of potential Sales Representatives if they can be assigned
+            // var managerRoleUsers = await _userManager.GetUsersInRoleAsync("Manager");
+            // allUsersForSalesRepDropdown.AddRange(managerRoleUsers);
+            // allUsersForSalesRepDropdown = allUsersForSalesRepDropdown.DistinctBy(u => u.Id).ToList();
+
+
+            var salesRepSelectListItems = new List<SelectListItem>();
+            foreach (var user in allUsersForSalesRepDropdown.OrderBy(u => u.UserName))
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                string? primaryRole = roles.FirstOrDefault() ?? "Сотрудник"; // Default role text
+
+                string namePart = (user.FirstName + " " + user.LastName).Trim();
+                if (string.IsNullOrWhiteSpace(namePart))
+                {
+                    namePart = user.UserName; // Fallback to UserName
+                }
+                salesRepSelectListItems.Add(new SelectListItem
+                {
+                    Value = user.Id.ToString(),
+                    Text = $"{namePart} ({primaryRole})"
+                });
+            }
+
+            // Determine current SalesRep's display name for the view model
+            string currentSalesRepDisplayName = "Не назначен";
+            if (order.SalesRepresentative != null)
+            {
+                // Construct the name carefully to avoid issues with null FirstName/LastName before Trim
+                string fName = order.SalesRepresentative.FirstName ?? "";
+                string lName = order.SalesRepresentative.LastName ?? "";
+                currentSalesRepDisplayName = (fName + " " + lName).Trim();
+
+                if (string.IsNullOrWhiteSpace(currentSalesRepDisplayName))
+                {
+                    currentSalesRepDisplayName = order.SalesRepresentative.UserName ?? "N/A"; // Ensure UserName fallback is also safe
+                }
+            }
+
+            var viewModel = new EditOrderViewModel
+            {
+                OrderId = order.Id,
+                ClientId = order.ClientId,
+                ClientName = order.Client?.Name ?? "N/A", // Display current client name
+                SalesRepresentativeId = order.SalesRepresentativeId,
+                SalesRepresentativeName = currentSalesRepDisplayName, // Display current sales rep name
+                OrderDate = order.OrderDate,
+                Status = order.Status,
+                OrderItems = order.OrderItems?.Select(oi => new OrderItemViewModel
+                {
+                    Id = oi.Id,
+                    ProductId = oi.ProductId,
+                    ProductName = oi.Product?.Name ?? "N/A",
+                    Quantity = oi.Quantity,
+                    PriceAtTimeOfOrder = oi.PriceAtTimeOfOrder
+                }).ToList(),
+
+                // SelectLists for dropdowns
+                Clients = new SelectList(await _context.Clients.OrderBy(c => c.Name).ToListAsync(), "Id", "Name", order.ClientId),
+                SalesRepresentatives = new SelectList(salesRepSelectListItems, "Value", "Text", order.SalesRepresentativeId),
+                Statuses = new SelectList(
+                    Enum.GetValues(typeof(OrderStatus)).Cast<OrderStatus>()
+                        .Select(e => new SelectListItem { Value = e.ToString(), Text = e.ToString() /* TODO: Localize enum names */ })
+                        .ToList(),
+                    "Value", "Text", order.Status.ToString()),
+                AvailableProducts = new MultiSelectList(await _context.Products.OrderBy(p => p.Name).ToListAsync(), "Id", "Name"),
+                SelectedProductIds = new List<int>(), // For adding new products, initially empty
+
+                // Role flags for the current logged-in user
+                IsAdmin = isAdmin,
+                IsManager = isManager,
+                IsSalesRepresentative = isAssignedSalesRepresentative, // True only if current user is THE assigned SalesRep
+
+                // Detailed permission flags based on roles
+                CanEditClient = isAdmin,
+                CanEditSalesRepresentative = isAdmin || isManager,
+                CanEditOrderDate = isAdmin,
+                CanEditStatus = isAdmin || isManager || isAssignedSalesRepresentative,
+                CanEditOrderItems = isAdmin || isManager || isAssignedSalesRepresentative,
+                CanAddOrderItems = isAdmin || isManager || isAssignedSalesRepresentative,
+                CanDeleteOrderItems = isAdmin || isManager || isAssignedSalesRepresentative
+            };
+
+            return View("Edit", viewModel);
+        }
+
+        // POST: Orders/Edit/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Manager,SalesRepresentative")]
+        public async Task<IActionResult> Edit(int id, EditOrderViewModel viewModel)
+        {
+            if (id != viewModel.OrderId)
+            {
+                return NotFound(); // Or BadRequest()
+            }
+
+            var orderToUpdate = await _context.Orders
+                .Include(o => o.OrderItems) // Crucial for updating items
+                .Include(o => o.Client) // For validation/display if needed
+                .Include(o => o.SalesRepresentative) // For validation/display
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (orderToUpdate == null)
+            {
+                return NotFound();
+            }
+
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser == null) return Challenge();
+
+            bool isAdmin = User.IsInRole("Admin");
+            bool isManager = User.IsInRole("Manager");
+            bool isAssignedSalesRepresentative = User.IsInRole("SalesRepresentative") && orderToUpdate.SalesRepresentativeId == currentUser.Id;
+
+            // Server-side authorization check for who can edit this order
+            if (!isAdmin && !isManager && !isAssignedSalesRepresentative)
+            {
+                return Forbid(); // User not allowed to edit this order at all
+            }
+
+            // Re-evaluate permissions based on the actual user (not just flags from GET)
+            bool canEditClient = isAdmin;
+            bool canEditSalesRepresentative = isAdmin || isManager;
+            bool canEditOrderDate = isAdmin;
+            bool canEditStatus = isAdmin || isManager || isAssignedSalesRepresentative;
+            bool canEditOrderItems = isAdmin || isManager || isAssignedSalesRepresentative; // Modify existing items
+            bool canAddOrderItems = isAdmin || isManager || isAssignedSalesRepresentative;
+            bool canDeleteOrderItems = isAdmin || isManager || isAssignedSalesRepresentative;
+
+
+            if (ModelState.IsValid)
+            {
+                // Update scalar properties based on permissions
+                if (canEditClient) orderToUpdate.ClientId = viewModel.ClientId;
+                if (canEditSalesRepresentative) orderToUpdate.SalesRepresentativeId = viewModel.SalesRepresentativeId; // Nullable
+                if (canEditOrderDate) orderToUpdate.OrderDate = viewModel.OrderDate;
+                if (canEditStatus) orderToUpdate.Status = viewModel.Status;
+
+                // OrderItems processing
+                if (canEditOrderItems || canAddOrderItems || canDeleteOrderItems)
+                {
+                    // 1. Handle existing items (update quantity, mark for deletion)
+                    if (viewModel.OrderItems != null && orderToUpdate.OrderItems != null) // Added null check for orderToUpdate.OrderItems
+                    {
+                        foreach (var itemVM in viewModel.OrderItems)
+                        {
+                            var existingItem = orderToUpdate.OrderItems.FirstOrDefault(oi => oi.Id == itemVM.Id);
+                            if (existingItem != null)
+                            {
+                                if (itemVM.IsMarkedForDeletion && canDeleteOrderItems)
+                                {
+                                    _context.OrderItems.Remove(existingItem);
+                                }
+                                else if (canEditOrderItems) // Can only update qty/price if allowed to edit items
+                                {
+                                    existingItem.Quantity = itemVM.Quantity;
+                                    // PriceAtTimeOfOrder for existing items is generally not changed
+                                    // unless specifically allowed and handled.
+                                    // existingItem.PriceAtTimeOfOrder = itemVM.PriceAtTimeOfOrder;
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. Handle newly added products
+                    if (viewModel.SelectedProductIds != null && viewModel.SelectedProductIds.Any() && canAddOrderItems)
+                    {
+                        orderToUpdate.OrderItems ??= new List<OrderItem>(); // Ensure collection is initialized
+                        foreach (var productId in viewModel.SelectedProductIds)
+                        {
+                            var product = await _context.Products.FindAsync(productId);
+                            if (product != null)
+                            {
+                                // Check if this product (as a new item) is already in the order to avoid duplicates,
+                                // or if the business logic allows adding same product multiple times as separate line items.
+                                // For simplicity, we add it as a new line item here.
+                                var newOrderItem = new OrderItem
+                                {
+                                    OrderId = orderToUpdate.Id,
+                                    ProductId = productId,
+                                    Quantity = 1, // Default quantity for new items, can be adjusted
+                                    PriceAtTimeOfOrder = product.Price // Get current price
+                                };
+                                orderToUpdate.OrderItems.Add(newOrderItem);
+                            }
+                        }
+                    }
+                } // End OrderItems processing block
+
+                try
+                {
+                    await _context.SaveChangesAsync();
+                    // TempData["SuccessMessage"] = "Заявка успешно обновлена!";
+                    return RedirectToAction(nameof(Details), new { id = orderToUpdate.Id });
+                }
+                catch (DbUpdateConcurrencyException)
+                {
+                    if (!_context.Orders.Any(e => e.Id == orderToUpdate.Id))
+                    {
+                        return NotFound();
+                    }
+                    else
+                    {
+                        // Log the error, add a model error, and return to the view
+                        ModelState.AddModelError(string.Empty, "Не удалось сохранить изменения. Заявка была изменена другим пользователем. Пожалуйста, обновите страницу и попробуйте снова.");
+                        // Potentially reload orderToUpdate from DB to show latest values if concurrency is an issue
+                    }
+                }
+                catch (Exception ex)
+                {
+                     ModelState.AddModelError(string.Empty, $"Произошла ошибка при сохранении: {ex.Message}");
+                }
+            } // End ModelState.IsValid
+
+            // If we got this far, something failed, re-populate necessary data for the view
+            // This is similar to the GET action's population logic
+
+            // Re-populate Sales Rep Select List
+            var allUsersForSalesRepDropdown = new List<User>();
+            var salesRepRoleUsers = await _userManager.GetUsersInRoleAsync("SalesRepresentative");
+            allUsersForSalesRepDropdown.AddRange(salesRepRoleUsers);
+            // Omitting managers from dropdown for now unless explicitly requested for POST error path
+
+            var salesRepSelectListItems = new List<SelectListItem>();
+            foreach (var user in allUsersForSalesRepDropdown.OrderBy(u => u.UserName))
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                string? primaryRole = roles.FirstOrDefault() ?? "Сотрудник"; // Made primaryRole nullable
+                string namePart = (user.FirstName + " " + user.LastName).Trim();
+                if (string.IsNullOrWhiteSpace(namePart)) namePart = user.UserName;
+                salesRepSelectListItems.Add(new SelectListItem { Value = user.Id.ToString(), Text = $"{namePart} ({primaryRole})" });
+            }
+            viewModel.SalesRepresentatives = new SelectList(salesRepSelectListItems, "Value", "Text", viewModel.SalesRepresentativeId);
+
+            // Re-populate Clients Select List
+            viewModel.Clients = new SelectList(await _context.Clients.OrderBy(c => c.Name).ToListAsync(), "Id", "Name", viewModel.ClientId);
+
+            // Re-populate Statuses Select List
+            viewModel.Statuses = new SelectList(
+                Enum.GetValues(typeof(OrderStatus)).Cast<OrderStatus>()
+                    .Select(e => new SelectListItem { Value = e.ToString(), Text = e.ToString() })
+                    .ToList(),
+                "Value", "Text", viewModel.Status.ToString());
+
+            // Re-populate Available Products
+            viewModel.AvailableProducts = new MultiSelectList(await _context.Products.OrderBy(p => p.Name).ToListAsync(), "Id", "Name", viewModel.SelectedProductIds);
+
+            // Re-set permission flags (as they are not part of the posted ViewModel)
+            viewModel.IsAdmin = isAdmin;
+            viewModel.IsManager = isManager;
+            viewModel.IsSalesRepresentative = isAssignedSalesRepresentative;
+            viewModel.CanEditClient = canEditClient;
+            viewModel.CanEditSalesRepresentative = canEditSalesRepresentative;
+            viewModel.CanEditOrderDate = canEditOrderDate;
+            viewModel.CanEditStatus = canEditStatus;
+            viewModel.CanEditOrderItems = canEditOrderItems;
+            viewModel.CanAddOrderItems = canAddOrderItems;
+            viewModel.CanDeleteOrderItems = canDeleteOrderItems;
+
+            // Ensure OrderItems in ViewModel still reflects what was attempted or loaded if not valid
+            // The binding might already handle OrderItems list, but if new items were conceptually added
+            // before validation failed for another field, they might not be in orderToUpdate.OrderItems.
+            // For robustness, one might rebuild viewModel.OrderItems based on orderToUpdate.OrderItems
+            // and any uncommitted (but valid from VM) new items if the design gets more complex.
+            // For now, the default model binding for viewModel.OrderItems is relied upon.
+            if (viewModel.OrderItems == null || !viewModel.OrderItems.Any()) {
+                viewModel.OrderItems = orderToUpdate.OrderItems?.Select(oi => new OrderItemViewModel
+                {
+                    Id = oi.Id,
+                    ProductId = oi.ProductId,
+                    ProductName = _context.Products.Find(oi.ProductId)?.Name ?? "N/A", // Re-fetch product name
+                    Quantity = oi.Quantity,
+                    PriceAtTimeOfOrder = oi.PriceAtTimeOfOrder
+                }).ToList();
+            }
+
+
+            return View("Edit", viewModel);
+        }
     }
 }
