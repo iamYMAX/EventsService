@@ -105,7 +105,7 @@ namespace EventsService.Controllers
                 salesRepSelectListItems.Add(new SelectListItem
                 {
                     Value = user.Id.ToString(),
-                    Text = $"{(string.IsNullOrWhiteSpace(user.DisplayName) ? user.UserName : user.DisplayName)} ({primaryRole})"
+                    Text = $"{((user.FirstName + " " + user.LastName).Trim() == "" ? user.UserName : (user.FirstName + " " + user.LastName).Trim())} ({primaryRole})"
                 });
             }
 
@@ -175,7 +175,7 @@ namespace EventsService.Controllers
                 salesRepSelectListItemsForRepopulate.Add(new SelectListItem
                 {
                     Value = user.Id.ToString(),
-                    Text = $"{(string.IsNullOrWhiteSpace(user.DisplayName) ? user.UserName : user.DisplayName)} ({primaryRole})"
+                    Text = $"{((user.FirstName + " " + user.LastName).Trim() == "" ? user.UserName : (user.FirstName + " " + user.LastName).Trim())} ({primaryRole})"
                 });
             }
             viewModel.SalesRepresentatives = new SelectList(salesRepSelectListItemsForRepopulate, "Value", "Text", viewModel.SalesRepresentativeId);

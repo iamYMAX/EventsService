@@ -6,9 +6,13 @@ namespace EventsService.Models
 {
     public class User : IdentityUser<int> // Use int for Id
     {
-        [PersonalData] // Indicates this is personal data
-        [StringLength(100, ErrorMessage = "Display Name cannot be longer than 100 characters.")]
-        public string? DisplayName { get; set; }
+        [PersonalData]
+        [StringLength(50, ErrorMessage = "First Name cannot be longer than 50 characters.")]
+        public string? FirstName { get; set; }
+
+        [PersonalData]
+        [StringLength(50, ErrorMessage = "Last Name cannot be longer than 50 characters.")]
+        public string? LastName { get; set; }
 
         // Navigation property for Orders (SalesRepresentative)
         public virtual ICollection<Order>? SalesRepresentativeOrders { get; set; }
