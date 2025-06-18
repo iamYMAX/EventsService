@@ -31,7 +31,22 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddControllersWithViews();
-builder.Services.AddScoped<EventsService.Services.ICartService, EventsService.Services.CartService>();
+
+// For Session State
+builder.Services.AddDistributedMemoryCache(); // Adds a default in-memory implementation of IDistributedCache
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Set session timeout (e.g., 30 minutes)
+    options.Cookie.HttpOnly = true; // Make the session cookie HTTP only
+    options.Cookie.IsEssential = true; // Make the session cookie essential
+});
+// IHttpContextAccessor is typically registered by AddControllersWithViews. If issues arise, uncomment:
+// builder.Services.AddHttpContextAccessor();
+
+// Register Cart Services
+builder.Services.AddScoped<EventsService.Services.ICartService, EventsService.Services.CartService>(); // DB-backed cart
+builder.Services.AddScoped<EventsService.Services.ISessionCartService, EventsService.Services.SessionCartService>(); // Session-based cart
+
 
 var app = builder.Build();
 
@@ -127,6 +142,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
+
+app.UseSession(); // IMPORTANT: Call UseSession after UseRouting and before UseAuthentication/UseAuthorization
 
 app.UseAuthentication();
 app.UseAuthorization();

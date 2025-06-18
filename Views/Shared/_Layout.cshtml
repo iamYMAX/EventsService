@@ -107,17 +107,27 @@
                             </li>
                         }
                     </ul>
-                    <!-- Theme Switcher -->
-                    <ul class="navbar-nav ms-2 me-auto"> <!-- Adjusted for spacing, me-auto might be too much if loginpartial is to its right -->
-                       <li class="nav-item d-flex align-items-center">
-                           <div class="theme-switch-wrapper" title="Переключить тему">
-                               <label class="theme-switch" for="themeSwitchCheckbox">
-                                   <input type="checkbox" id="themeSwitchCheckbox" />
-                                   <div class="slider round"></div>
-                               </label>
-                           </div>
-                           <span class="d-lg-none ms-1">Тема</span>
-                       </li>
+
+                    @* This ul will hold items on the right, before LoginPartial *@
+                    <ul class="navbar-nav ms-auto"> @* ms-auto pushes this group to the right *@
+                        <li class="nav-item d-flex align-items-center me-2"> @* me-2 for spacing from cart icon *@
+                            <div class="theme-switch-wrapper" title="Переключить тему">
+                                <label class="theme-switch" for="themeSwitchCheckbox">
+                                    <input type="checkbox" id="themeSwitchCheckbox" />
+                                    <div class="slider round"></div>
+                                </label>
+                            </div>
+                            <span class="d-lg-none ms-1">Тема</span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Cart" asp-action="Index" title="Корзина">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-cart-fill" viewBox="0 0 16 16">
+                                    <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"/>
+                                </svg>
+                                <span class="d-lg-none ms-2">Корзина</span> @* Text for collapsed menu *@
+                                @* Item count badge can be added here later, e.g., <span class="badge bg-danger ms-1" id="cartItemCount">0</span> *@
+                            </a>
+                        </li>
                     </ul>
                     <partial name="_LoginPartial" />
                 </div>
