@@ -1,0 +1,166 @@
+@model EventsService.ViewModels.UserClientLinkingIndexViewModel
+
+@{
+    ViewData["Title"] = "Управление связями Пользователь-Клиент";
+}
+
+<h1>@ViewData["Title"]</h1>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <h4>Связать пользователя с существующим профилем клиента</h4>
+        @if (Model.UnlinkedClientRoleUsers.Any() && Model.UnlinkedClientProfiles.Any())
+        {
+            <form asp-action="LinkUserToClient" method="post" class="mb-4">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="form-group mb-2">
+                    <label asp-for="SelectedUserIdToLink" class="control-label"></label>
+                    <select asp-for="SelectedUserIdToLink" class="form-control" asp-items="Model.AvailableUnlinkedUsers">
+                        <option value="">-- Выберите пользователя --</option>
+                    </select>
+                    <span asp-validation-for="SelectedUserIdToLink" class="text-danger"></span>
+                </div>
+                <div class="form-group mb-2">
+                    <label asp-for="SelectedClientIdToLink" class="control-label"></label>
+                    <select asp-for="SelectedClientIdToLink" class="form-control" asp-items="Model.AvailableUnlinkedClients">
+                        <option value="">-- Выберите профиль клиента --</option>
+                    </select>
+                    <span asp-validation-for="SelectedClientIdToLink" class="text-danger"></span>
+                </div>
+                <button type="submit" class="btn btn-primary">Связать</button>
+            </form>
+        }
+        else
+        {
+            <p class="text-muted">
+                @if (!Model.UnlinkedClientRoleUsers.Any())
+                {
+                    <span>Нет пользователей с ролью 'Клиент' для привязки.</span><br/>
+                }
+                @if (!Model.UnlinkedClientProfiles.Any())
+                {
+                    <span>Нет свободных профилей клиентов для привязки.</span>
+                }
+            </p>
+        }
+
+        <hr class="my-4"/>
+
+        <h4>Создать новый профиль клиента для пользователя</h4>
+        @if (Model.UnlinkedClientRoleUsers.Any())
+        {
+            <form asp-action="CreateClientForUser" method="post" class="mb-4">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                 <div class="form-group mb-2">
+                    <label asp-for="SelectedUserIdToLink" class="control-label">Выберите пользователя для создания нового профиля клиента</label>
+                    <select asp-for="SelectedUserIdToLink" class="form-control" asp-items="Model.AvailableUnlinkedUsers">
+                        <option value="">-- Выберите пользователя --</option>
+                    </select>
+                    <span asp-validation-for="SelectedUserIdToLink" class="text-danger"></span>
+                </div>
+
+                <div class="form-group mb-2">
+                    <label asp-for="NewClientName" class="control-label"></label>
+                    <input asp-for="NewClientName" class="form-control" />
+                    <span asp-validation-for="NewClientName" class="text-danger"></span>
+                </div>
+                <div class="form-group mb-2">
+                    <label asp-for="NewClientPhoneNumber" class="control-label"></label>
+                    <input asp-for="NewClientPhoneNumber" class="form-control" />
+                    <span asp-validation-for="NewClientPhoneNumber" class="text-danger"></span>
+                </div>
+                <div class="form-group mb-2">
+                    <label asp-for="NewClientOrganization" class="control-label"></label>
+                    <input asp-for="NewClientOrganization" class="form-control" />
+                    <span asp-validation-for="NewClientOrganization" class="text-danger"></span>
+                </div>
+                <div class="form-group mb-2">
+                    <label asp-for="NewClientEmail" class="control-label"></label>
+                    <input asp-for="NewClientEmail" class="form-control" />
+                    <span asp-validation-for="NewClientEmail" class="text-danger"></span>
+                </div>
+                <button type="submit" class="btn btn-success mt-2">Создать и связать</button>
+            </form>
+        }
+        else
+        {
+            <p class="text-muted">Нет пользователей с ролью 'Клиент', для которых можно было бы создать новый профиль.</p>
+        }
+    </div>
+
+    <div class="col-md-6">
+        <h4>Текущие связи Пользователь-Клиент</h4>
+        @if (Model.LinkedUserClientPairs.Any())
+        {
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Пользователь (Имя)</th>
+                        <th>Пользователь (Email)</th>
+                        <th>Профиль клиента</th>
+                        <th>Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.LinkedUserClientPairs)
+                    {
+                        <tr>
+                            <td>@((item.FirstName + " " + item.LastName).Trim())</td>
+                            <td>@item.UserName</td>
+                            <td>@item.LinkedClientName (ID: @item.LinkedClientId)</td>
+                            <td>
+                                <form asp-action="UnlinkClientFromUser" method="post" onsubmit="return confirm('Вы уверены, что хотите отвязать этого клиента от пользователя? Профиль клиента не будет удален.');">
+                                    <input type="hidden" name="clientId" value="@item.LinkedClientId" />
+                                    <button type="submit" class="btn btn-warning btn-sm">Отвязать</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>Нет активных связей между пользователями (с ролью 'Клиент') и профилями клиентов.</p>
+        }
+
+        <hr class="my-3" />
+
+        <h4>Пользователи с ролью 'Клиент' (не связаны)</h4>
+        @if (Model.UnlinkedClientRoleUsers.Any())
+        {
+            <ul>
+                @foreach (var user in Model.UnlinkedClientRoleUsers)
+                {
+                    <li>@((user.FirstName + " " + user.LastName).Trim()) (@user.UserName) - ID: @user.UserId</li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p>Все пользователи с ролью 'Клиент' уже связаны с профилями клиентов.</p>
+        }
+
+        <hr class="my-3" />
+
+        <h4>Профили клиентов (не связаны)</h4>
+        @if (Model.UnlinkedClientProfiles.Any())
+        {
+            <ul>
+                @foreach (var client in Model.UnlinkedClientProfiles)
+                {
+                    <li>@client.ClientName (ID: @client.ClientId)</li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p>Все профили клиентов уже связаны с пользователями.</p>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

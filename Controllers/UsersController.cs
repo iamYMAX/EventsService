@@ -94,6 +94,7 @@ namespace EventsService.Controllers
                     var roleAddResult = await _userManager.AddToRoleAsync(user, selectedRole.Name ?? ""); // Ensure selectedRole.Name is not null
                     if (roleAddResult.Succeeded)
                     {
+                        await EnsureClientProfileExistsAsync(user); // Call the helper
                         // TempData["SuccessMessage"] = $"Пользователь {user.Email} успешно создан с ролью {selectedRole.Name}.";
                         return RedirectToAction(nameof(Index));
                     }
@@ -267,6 +268,7 @@ namespace EventsService.Controllers
                      return View(model);
                 }
 
+                await EnsureClientProfileExistsAsync(user); // Call the helper
                 // TempData["SuccessMessage"] = $"Данные пользователя {user.UserName} успешно обновлены.";
                 return RedirectToAction(nameof(Index));
             }
@@ -446,6 +448,48 @@ namespace EventsService.Controllers
             // var userViewModel = new UserViewModel { Id = user.Id, UserName = user.UserName, Email = user.Email, Roles = userRolesForDeleteCheck };
             // return View(userViewModel); // This would show errors on the Delete page itself.
             return RedirectToAction(nameof(Index));
+        }
+
+        private async Task EnsureClientProfileExistsAsync(User user)
+        {
+            if (user == null) return;
+
+            // Check if this user is in the "Client" role
+            var roles = await _userManager.GetRolesAsync(user);
+            if (roles.Contains("Client"))
+            {
+                // Check if a Client profile already exists for this user
+                bool clientProfileExists = await _context.Clients.AnyAsync(c => c.UserId == user.Id);
+                if (!clientProfileExists)
+                {
+                    string clientName = "";
+                    if (!string.IsNullOrWhiteSpace(user.FirstName) || !string.IsNullOrWhiteSpace(user.LastName))
+                    {
+                        clientName = ($"{user.FirstName} {user.LastName}").Trim();
+                    }
+                    if (string.IsNullOrWhiteSpace(clientName))
+                    {
+                        clientName = user.UserName; // Fallback to UserName
+                    }
+                    // Ensure clientName is not null if UserName was also null (highly unlikely for IdentityUser)
+                    if (string.IsNullOrWhiteSpace(clientName)) {
+                        clientName = $"Клиент_{user.Id}"; // Absolute fallback
+                    }
+
+
+                    var newClientProfile = new Client
+                    {
+                        UserId = user.Id,
+                        Name = clientName,
+                        Email = user.Email // Default Client email to User's email
+                        // Other properties will be default (null for string/nullable, default for value types)
+                    };
+                    _context.Clients.Add(newClientProfile);
+                    await _context.SaveChangesAsync();
+                    // Optional: Log this automatic creation
+                    // _logger.LogInformation($"Automatically created client profile for user {user.UserName} (ID: {user.Id}).");
+                }
+            }
         }
     }
 }
