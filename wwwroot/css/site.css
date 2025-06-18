@@ -1,3 +1,235 @@
+/* site.css */
+
+/* :root defines variables for the default (Light) Theme */
+:root {
+    --body-bg-color: #f8f9fa;
+    --body-text-color: #212529;
+    --primary-accent-color: #007bff;
+    --secondary-accent-color: #6c757d;
+    --section-bg-color: #ffffff;
+    --section-border-color: #dee2e6;
+    --navbar-bg-color: #ffffff;
+    --navbar-text-color: #212529; /* For links/text in navbar */
+    --navbar-border-color: #dee2e6; /* Added for navbar border */
+    --button-primary-bg-color: #007bff;
+    --button-primary-text-color: #ffffff;
+    --button-secondary-bg-color: #6c757d;
+    --button-secondary-text-color: #ffffff;
+    --form-input-bg-color: #ffffff;
+    --form-input-text-color: #495057;
+    --form-input-border-color: #ced4da;
+    --table-header-bg-color: #e9ecef;
+    --table-header-text-color: #212529;
+    --table-row-hover-bg-color: #f1f3f5; /* Lighter than default Bootstrap hover */
+    --table-border-color: #dee2e6; /* Added for table borders */
+    --link-color: #007bff;
+    --link-hover-color: #0056b3;
+    --card-bg-color: #ffffff; /* Added for card background */
+    --card-border-color: rgba(0, 0, 0, 0.125); /* Bootstrap's default card border */
+
+    /* Typography Variables */
+    --base-font-size: 1rem; /* Effective base font size */
+    --base-line-height: 1.6;
+    --paragraph-margin-bottom: 1rem;
+    /* --heading-font-family: sans-serif; /* Optional: if different from body */
+    /* --heading-font-weight: 500; /* Bootstrap default is typically fine */
+}
+
+/* Dark Theme Overrides using a data attribute on the body */
+body[data-theme="dark"] {
+    --body-bg-color: #2c3034; /* Darker background */
+    --body-text-color: #f8f9fa; /* Light text */
+    --primary-accent-color: #3793ff; /* Brighter blue for dark mode */
+    --secondary-accent-color: #adb5bd; /* Lighter gray */
+    --section-bg-color: #343a40; /* Darker section background (e.g., cards) */
+    --section-border-color: #495057; /* Mid-dark gray for borders */
+    --navbar-bg-color: #343a40; /* Dark navbar */
+    --navbar-text-color: #f8f9fa; /* Light navbar text */
+    --navbar-border-color: #495057;
+    --button-primary-bg-color: #3793ff;
+    --button-primary-text-color: #ffffff;
+    --button-secondary-bg-color: #adb5bd;
+    --button-secondary-text-color: #212529; /* Dark text on lighter gray button */
+    --form-input-bg-color: #495057; /* Darker input background */
+    --form-input-text-color: #f8f9fa; /* Light input text */
+    --form-input-border-color: #6c757d; /* Mid-gray input border */
+    --table-header-bg-color: #454d55; /* Darker table header */
+    --table-header-text-color: #f8f9fa; /* Light table header text */
+    --table-row-hover-bg-color: #3f464d; /* Slightly lighter dark gray for hover */
+    --table-border-color: #495057;
+    --link-color: #3793ff;
+    --link-hover-color: #69adff; /* Lighter blue for hover */
+    --card-bg-color: #343a40;
+    --card-border-color: #495057;
+
+    /* Specific overrides for Bootstrap components in dark mode if needed */
+    /* For example, Bootstrap's .table-striped might need adjustment */
+    /* Or .list-group-item, etc. This will be iterative. */
+}
+
+/* Apply base body styles using variables - this can be placed lower if preferred,
+   but good to have it near the variable definitions or where body is already styled.
+   If body is already styled in site.css, modify that existing rule. */
+body {
+    background-color: var(--body-bg-color);
+    color: var(--body-text-color);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; /* Bootstrap 5 default stack */
+    font-size: var(--base-font-size);
+    line-height: var(--base-line-height);
+    margin-bottom: 60px;
+    /* Ensure other body styles like font-family, margin, etc., are preserved or defined elsewhere */
+}
+
+/* It's good practice to ensure a smooth transition for color changes */
+body, .navbar, .card, .form-control, .btn, .table {
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+/* General link styling */
+a {
+    color: var(--link-color);
+}
+
+a:hover {
+    color: var(--link-hover-color);
+}
+
+/* Typography Styling */
+p {
+    margin-bottom: var(--paragraph-margin-bottom);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: var(--body-text-color);
+    /* Other heading properties like font-weight, margin-top, margin-bottom
+       are generally well-handled by Bootstrap defaults. We can add overrides
+       for --heading-font-family or --heading-font-weight here if those vars are defined and used. */
+}
+
+/* Component Styling with CSS Variables */
+
+/* Navbar adjustments */
+/* Remove .bg-white from navbar in _Layout.cshtml and use these styles */
+.navbar {
+    background-color: var(--navbar-bg-color);
+    border-bottom: 1px solid var(--navbar-border-color); /* Ensure border uses variable */
+}
+.navbar .navbar-brand {
+    color: var(--navbar-text-color);
+}
+.navbar .navbar-brand:hover {
+    color: var(--link-hover-color); /* Or a specific navbar link hover */
+}
+.navbar .nav-link {
+    color: var(--navbar-text-color);
+}
+.navbar .nav-link:hover {
+    color: var(--link-hover-color); /* Or a specific navbar link hover */
+}
+.navbar-toggler-icon {
+    /* Consider filter: invert(1) for dark mode if default icon is dark */
+    /* This might need more specific handling via JS or more CSS for dark theme */
+}
+body[data-theme="dark"] .navbar-toggler-icon {
+    /* Example: if your toggler is an SVG with 'fill', you might override it.
+       If it's a background-image, you might switch it.
+       A common quick fix if it's a simple dark icon: */
+    filter: invert(1) sepia(10%) saturate(100%) hue-rotate(180deg); /* Makes it lighter */
+}
+
+
+/* Cards */
+.card {
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--card-border-color);
+}
+.card-header {
+    background-color: var(--section-bg-color); /* Or a slightly different shade like table header */
+    border-bottom: 1px solid var(--card-border-color);
+    /* Text color will inherit or can be set if needed */
+}
+/* Ensure .card-body text color uses --body-text-color (usually by default) */
+
+
+/* Tables */
+.table {
+    border-color: var(--table-border-color);
+    /* Text color will inherit or can be set if needed */
+}
+.table th, .table td {
+    border-color: var(--table-border-color); /* For inner borders */
+}
+.table thead th {
+    background-color: var(--table-header-bg-color);
+    color: var(--table-header-text-color);
+    border-bottom-width: 2px; /* Bootstrap default, ensure border color is themed */
+}
+.table-hover tbody tr:hover {
+    background-color: var(--table-row-hover-bg-color);
+    /* Ensure text color has enough contrast on hover, may need a specific variable if default is not good */
+}
+body[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+    /* Bootstrap's striped table in dark mode often needs explicit override */
+    background-color: rgba(255, 255, 255, 0.03); /* Very subtle striping for dark */
+    color: var(--body-text-color);
+}
+body[data-theme="dark"] .table {
+    color: var(--body-text-color); /* Ensure table text is light in dark mode */
+}
+body[data-theme="dark"] .table th,
+body[data-theme="dark"] .table td {
+    border-color: var(--table-border-color);
+}
+
+
+/* Form Controls */
+.form-control {
+    background-color: var(--form-input-bg-color);
+    color: var(--form-input-text-color);
+    border: 1px solid var(--form-input-border-color);
+}
+.form-control:focus {
+    border-color: var(--primary-accent-color); /* Focus border to accent */
+    /* box-shadow already handled by the updated general focus rule */
+}
+/* For select elements, styling the arrow can be tricky and browser-dependent */
+.form-select {
+    background-color: var(--form-input-bg-color);
+    color: var(--form-input-text-color);
+    border: 1px solid var(--form-input-border-color);
+}
+
+
+/* Buttons - Overriding Bootstrap's defaults */
+.btn-primary {
+    background-color: var(--button-primary-bg-color);
+    border-color: var(--button-primary-bg-color); /* Match border to background */
+    color: var(--button-primary-text-color);
+}
+.btn-primary:hover {
+    /* Slightly darken/lighten the primary color for hover - needs JS or pre-defined hover vars */
+    /* For simplicity, we can use a filter or a fixed offset if we don't define more vars */
+    /* This example just makes it a bit darker/lighter. Proper hover needs more thought or Sass. */
+    /* filter: brightness(90%); */ /* Simple hover, might not be ideal for all colors */
+    /* Let's use a slightly different shade for hover from variables if possible or just rely on default BS hover for now if it's not too off */
+}
+/* Dark mode specific for primary button hover if needed */
+body[data-theme="dark"] .btn-primary:hover {
+    /* filter: brightness(120%); */
+}
+
+.btn-secondary {
+    background-color: var(--button-secondary-bg-color);
+    border-color: var(--button-secondary-bg-color);
+    color: var(--button-secondary-text-color);
+}
+/* ... similar hover considerations for btn-secondary ... */
+
+/* Ensure other Bootstrap button types (.btn-success, .btn-danger, etc.)
+   still look acceptable or plan to theme them too if used extensively.
+   For now, focusing on primary and secondary. */
+
+/* Ensure the rest of site.css remains below this new block */
 html {
   font-size: 14px;
 }
@@ -9,7 +241,7 @@ html {
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem var(--section-bg-color), 0 0 0 0.25rem var(--primary-accent-color);
 }
 
 html {
@@ -17,6 +249,4 @@ html {
   min-height: 100%;
 }
 
-body {
-  margin-bottom: 60px;
-}
+/* body rule already merged above */
