@@ -1,14 +1,12 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using EventsService.Models; // For Parameter, Characteristic, Property if handled directly
 
-namespace EventsService.Models
+namespace EventsService.ViewModels
 {
-    public class Product
+    public class CreateProductViewModel
     {
-        [Key]
-        public int Id { get; set; }
-
         [Required(ErrorMessage = "Наименование обязательно для заполнения.")]
         [StringLength(100, ErrorMessage = "Наименование не может превышать 100 символов.")]
         [Display(Name = "Наименование")]
@@ -19,7 +17,6 @@ namespace EventsService.Models
         public string? Description { get; set; }
 
         [Required(ErrorMessage = "Цена обязательна для заполнения.")]
-        [Column(TypeName = "decimal(18,2)")]
         [Range(0.01, double.MaxValue, ErrorMessage = "Цена должна быть положительным числом.")]
         [Display(Name = "Цена")]
         public decimal Price { get; set; }
@@ -33,10 +30,15 @@ namespace EventsService.Models
         [Display(Name = "Артикул (SKU)")]
         public string? SKU { get; set; }
 
-        public virtual ICollection<Parameter>? Parameters { get; set; }
-        public virtual ICollection<Characteristic>? Characteristics { get; set; }
-        public virtual ICollection<Property>? Properties { get; set; }
-        public virtual ICollection<OrderItem>? OrderItems { get; set; }
-        public virtual ICollection<ProductImage>? Images { get; set; } = new List<ProductImage>();
+        // For image uploads
+        [Display(Name = "Загрузить изображения")]
+        public IFormFileCollection? UploadedImages { get; set; }
+
+        // If Parameters, Characteristics, Properties are created at the same time:
+        // public List<Parameter> Parameters { get; set; } = new List<Parameter>();
+        // public List<Characteristic> Characteristics { get; set; } = new List<Characteristic>();
+        // public List<Property> Properties { get; set; } = new List<Property>();
+        // For simplicity, these are not included here yet; they are managed separately by current ProductsController.
+        // If image upload is complex, these might be added via separate actions after product creation.
     }
 }

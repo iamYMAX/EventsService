@@ -1,5 +1,6 @@
 using EventsService.Data;
 using EventsService.Models;
+using EventsService.ViewModels; // Added
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -48,7 +49,9 @@ namespace EventsService.Controllers
         // GET: Products/Create
         public IActionResult Create()
         {
-            return View();
+            var viewModel = new CreateProductViewModel();
+            // Any default values for the viewModel can be set here if needed
+            return View(viewModel); // New: returns View(viewModel)
         }
 
         // POST: Products/Create
@@ -75,16 +78,45 @@ namespace EventsService.Controllers
             }
 
             var product = await _context.Products
-                .Include(p => p.Parameters)
-                .Include(p => p.Characteristics)
-                .Include(p => p.Properties)
+                .Include(p => p.Images) // Eagerly load existing images
+                .Include(p => p.Parameters)     // Keep these if view uses them
+                .Include(p => p.Characteristics) // Keep these
+                .Include(p => p.Properties)      // Keep these
+                .AsNoTracking() // Good for read-only scenarios like populating an edit form
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (product == null)
             {
                 return NotFound();
             }
-            return View(product);
+
+            var viewModel = new EditProductViewModel
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                Quantity = product.Quantity,
+                SKU = product.SKU,
+                ExistingImages = product.Images?.Select(img => new ProductImageViewModel
+                {
+                    Id = img.Id,
+                    ImagePath = img.ImagePath, // Assuming ImagePath is the relative path for display
+                    Caption = img.Caption,
+                    IsPrimary = img.IsPrimary
+                }).ToList() ?? new List<ProductImageViewModel>(),
+                PrimaryImageId = product.Images?.FirstOrDefault(img => img.IsPrimary)?.Id
+            };
+
+            // If the view also needs access to Parameters, Characteristics, Properties,
+            // and they are not part of EditProductViewModel, you might pass the original 'product'
+            // entity via ViewBag, or reconsider adding them to EditProductViewModel if they are editable.
+            // For now, the view will be typed to EditProductViewModel.
+            // The existing Products/Edit.cshtml view might need updates if it directly accessed product.Parameters etc.
+            // and now needs to get them from a ViewBag or if the ViewModel is the sole source.
+            // Let's assume the view will be adapted for EditProductViewModel.
+
+            return View(viewModel);
         }
 
         // POST: Products/Edit/5

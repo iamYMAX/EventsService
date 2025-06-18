@@ -1,13 +1,13 @@
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Http;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+// using EventsService.Models; // For Parameter, Characteristic, Property if needed
 
-namespace EventsService.Models
+namespace EventsService.ViewModels
 {
-    public class Product
+    public class EditProductViewModel
     {
-        [Key]
-        public int Id { get; set; }
+        public int Id { get; set; } // Product Id
 
         [Required(ErrorMessage = "Наименование обязательно для заполнения.")]
         [StringLength(100, ErrorMessage = "Наименование не может превышать 100 символов.")]
@@ -19,7 +19,6 @@ namespace EventsService.Models
         public string? Description { get; set; }
 
         [Required(ErrorMessage = "Цена обязательна для заполнения.")]
-        [Column(TypeName = "decimal(18,2)")]
         [Range(0.01, double.MaxValue, ErrorMessage = "Цена должна быть положительным числом.")]
         [Display(Name = "Цена")]
         public decimal Price { get; set; }
@@ -33,10 +32,15 @@ namespace EventsService.Models
         [Display(Name = "Артикул (SKU)")]
         public string? SKU { get; set; }
 
-        public virtual ICollection<Parameter>? Parameters { get; set; }
-        public virtual ICollection<Characteristic>? Characteristics { get; set; }
-        public virtual ICollection<Property>? Properties { get; set; }
-        public virtual ICollection<OrderItem>? OrderItems { get; set; }
-        public virtual ICollection<ProductImage>? Images { get; set; } = new List<ProductImage>();
+        [Display(Name = "Загрузить новые изображения")]
+        public IFormFileCollection? UploadedImages { get; set; } // For new uploads
+
+        public List<ProductImageViewModel> ExistingImages { get; set; } = new List<ProductImageViewModel>();
+
+        [Display(Name = "Основное изображение")]
+        public int? PrimaryImageId { get; set; } // To set a new primary image from existing ones
+
+        // Parameters, Characteristics, Properties are assumed to be loaded with the Product entity
+        // and displayed directly in the Edit view, not part of this ViewModel's direct editable fields for now.
     }
 }

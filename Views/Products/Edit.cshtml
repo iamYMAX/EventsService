@@ -1,14 +1,18 @@
-@model EventsService.Models.Product
+@model EventsService.ViewModels.EditProductViewModel
+@using EventsService.ViewModels // For ProductImageViewModel
 
-@{ ViewData["Title"] = "Редактировать товар/услугу"; }
+@{
+    ViewData["Title"] = "Редактировать товар/услугу: " + Model.Name;
+}
 
 <h1>@ViewData["Title"]</h1>
 <hr />
 <div class="row">
-    <div class="col-md-6">
-        <form asp-action="Edit">
+    <div class="col-md-8"> @* Widened column for more fields *@
+        <form asp-action="Edit" method="post" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Id" />
+
             <div class="form-group mb-3">
                 <label asp-for="Name" class="control-label"></label>
                 <input asp-for="Name" class="form-control" />
@@ -35,54 +39,62 @@
                 <span asp-validation-for="SKU" class="text-danger"></span>
             </div>
 
+            <hr />
+            <h4>Существующие изображения</h4>
+            @if (Model.ExistingImages != null && Model.ExistingImages.Any())
+            {
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3 mb-3">
+                    @for (int i = 0; i < Model.ExistingImages.Count; i++)
+                    {
+                        <div class="col">
+                            <div class="card h-100">
+                                <img src="~/@Model.ExistingImages[i].ImagePath.Replace('\\', '/')" class="card-img-top" alt="@Model.ExistingImages[i].Caption" style="max-height: 150px; object-fit: contain; padding: 5px;" />
+                                <div class="card-body">
+                                    <p class="card-text small">@Model.ExistingImages[i].Caption</p>
+                                    <input type="hidden" asp-for="ExistingImages[i].Id" />
+                                    <input type="hidden" asp-for="ExistingImages[i].ImagePath" />
+                                    <input type="hidden" asp-for="ExistingImages[i].Caption" />
+                                    @* IsPrimary is handled by the radio button selection below for PrimaryImageId *@
+                                    @* <input type="hidden" asp-for="ExistingImages[i].IsPrimary" /> *@
+
+                                    <div class="form-check">
+                                        <input asp-for="ExistingImages[i].IsMarkedForDeletion" type="checkbox" class="form-check-input" />
+                                        <label asp-for="ExistingImages[i].IsMarkedForDeletion" class="form-check-label">Удалить это изображение</label>
+                                    </div>
+                                </div>
+                                <div class="card-footer">
+                                     <div class="form-check">
+                                        <input type="radio" asp-for="PrimaryImageId" value="@Model.ExistingImages[i].Id" id="primaryImage_@Model.ExistingImages[i].Id" class="form-check-input" />
+                                        <label for="primaryImage_@Model.ExistingImages[i].Id" class="form-check-label">Сделать основным</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <p>Нет загруженных изображений для этого товара.</p>
+            }
+            <hr />
+
+            <h4>Загрузить новые изображения</h4>
+            <div class="form-group mb-3">
+                <label asp-for="UploadedImages" class="control-label"></label>
+                <input asp-for="UploadedImages" type="file" class="form-control" multiple />
+                <span asp-validation-for="UploadedImages" class="text-danger"></span>
+            </div>
+
             <div class="form-group mt-3">
-                <input type="submit" value="Сохранить" class="btn btn-success me-2" />
+                <input type="submit" value="Сохранить изменения" class="btn btn-primary me-2" />
                 <a asp-action="Index" class="btn btn-secondary">Отмена</a>
             </div>
         </form>
     </div>
-
-    <div class="col-md-6">
-        <h4>Дополнительная информация</h4>
-        <p class="text-muted">Управление параметрами, характеристиками и свойствами будет доступно в отдельном интерфейсе или в будущих обновлениях.</p>
-
-        @if (Model.Parameters != null && Model.Parameters.Any())
-        {
-            <h5 class="mt-4">Параметры</h5>
-            <ul class="list-group">
-                @foreach (var item in Model.Parameters)
-                {
-                    <li class="list-group-item"><strong>@Html.DisplayFor(modelItem => item.Name):</strong> @Html.DisplayFor(modelItem => item.Value)</li>
-                }
-            </ul>
-        }
-        else { <p>Нет параметров.</p> }
-
-
-        @if (Model.Characteristics != null && Model.Characteristics.Any())
-        {
-            <h5 class="mt-4">Характеристики</h5>
-            <ul class="list-group">
-                @foreach (var item in Model.Characteristics)
-                {
-                    <li class="list-group-item"><strong>@Html.DisplayFor(modelItem => item.Name):</strong> @Html.DisplayFor(modelItem => item.Value)</li>
-                }
-            </ul>
-        }
-        else { <p>Нет характеристик.</p> }
-
-        @if (Model.Properties != null && Model.Properties.Any())
-        {
-            <h5 class="mt-4">Свойства</h5>
-            <ul class="list-group">
-                @foreach (var item in Model.Properties)
-                {
-                    <li class="list-group-item"><strong>@Html.DisplayFor(modelItem => item.Name):</strong> @Html.DisplayFor(modelItem => item.Value)</li>
-                }
-            </ul>
-        }
-         else { <p>Нет свойств.</p> }
-    </div>
+    @* Removed the second col-md-6 that displayed Parameters, Characteristics, Properties directly from Product model *@
 </div>
 
-@section Scripts { @{await Html.RenderPartialAsync("_ValidationScriptsPartial");} }
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

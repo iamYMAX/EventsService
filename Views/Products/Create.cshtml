@@ -1,4 +1,4 @@
-@model EventsService.Models.Product
+@model EventsService.ViewModels.CreateProductViewModel
 
 @{ ViewData["Title"] = "Добавить товар/услугу"; }
 
@@ -6,7 +6,7 @@
 <hr />
 <div class="row">
     <div class="col-md-6">
-        <form asp-action="Create">
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <div class="form-group mb-3">
                 <label asp-for="Name" class="control-label"></label>
@@ -35,6 +35,12 @@
             </div>
 
             @* Parameters, Characteristics, Properties will be handled via separate UI/future enhancement *@
+
+            <div class="form-group mb-3">
+                <label asp-for="UploadedImages" class="control-label"></label>
+                <input asp-for="UploadedImages" type="file" class="form-control" multiple />
+                <span asp-validation-for="UploadedImages" class="text-danger"></span>
+            </div>
 
             <div class="form-group mt-3">
                 <input type="submit" value="Создать" class="btn btn-success me-2" />

@@ -23,6 +23,7 @@ namespace EventsService.Data
         public DbSet<Property> Properties { get; set; }
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
+        public DbSet<ProductImage> ProductImages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -124,6 +125,13 @@ namespace EventsService.Data
                 .WithMany()
                 .HasForeignKey(ci => ci.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Product to ProductImages relationship (One Product has Many ProductImages)
+            modelBuilder.Entity<Product>()
+                .HasMany(p => p.Images)       // Product has many Images
+                .WithOne(pi => pi.Product)    // ProductImage has one Product
+                .HasForeignKey(pi => pi.ProductId) // Foreign key in ProductImage
+                .OnDelete(DeleteBehavior.Cascade); // If Product is deleted, delete its ProductImages.
         }
     }
 }
