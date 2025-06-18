@@ -1,6 +1,7 @@
 @model EventsService.ViewModels.EditProductViewModel
 @using EventsService.ViewModels // For ProductImageViewModel
 @using System;
+@using System.Linq;
 
 @{
     ViewData["Title"] = "Редактировать товар/услугу: " + Model.Name;
@@ -59,10 +60,46 @@
 
                                         if (string.IsNullOrEmpty(cleanedPath) || cleanedPath == "/")
                                         {
-                                            finalImageUrl = ""; // Path is empty or just a slash, no valid image
+                                            finalImageUrl = ""; // Path is empty or just a slash
+                                        }
+                                        else if (cleanedPath.StartsWith("//"))
+                                        {
+                                            // Protocol-relative URL (e.g., //host/path)
+                                            string pathWithoutScheme = cleanedPath.Substring(2); // "host/path" or "host"
+                                            string[] parts = pathWithoutScheme.Split(new[] { '/' }, 2); // Split into host and (optional) rest_of_path
+                                            string host = parts[0];
+
+                                            if (string.IsNullOrEmpty(host)) // Path was just "//" or "///..."
+                                            {
+                                                finalImageUrl = "";
+                                            }
+                                            else if (string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase) || host.Contains("."))
+                                            {
+                                                // Valid host (localhost or contains a dot like cdn.example.com)
+                                                finalImageUrl = cleanedPath; // Use the protocol-relative URL as is
+                                            }
+                                            else
+                                            {
+                                                // Malformed host (e.g., "uploads", "guid-filename"). Treat its path as app-relative.
+                                                string pathAfterHost = "";
+                                                if (parts.Length > 1 && !string.IsNullOrEmpty(parts[1]))
+                                                {
+                                                    pathAfterHost = "/" + parts[1]; // ensure leading slash for path part
+                                                }
+
+                                                if (string.IsNullOrEmpty(pathAfterHost) || pathAfterHost == "/")
+                                                {
+                                                    finalImageUrl = ""; // No specific path after malformed host
+                                                }
+                                                else
+                                                {
+                                                    finalImageUrl = Url.Content("~/" + pathAfterHost.TrimStart('/'));
+                                                }
+                                            }
                                         }
                                         else
                                         {
+                                            // Not protocol-relative. Try to parse as absolute or treat as relative.
                                             Uri uri = null;
                                             if (Uri.TryCreate(cleanedPath, UriKind.Absolute, out uri) &&
                                                 uri != null &&
@@ -71,7 +108,7 @@
                                                 // It's an absolute URI with http or https scheme
                                                 if (string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase) || uri.Host.Contains("."))
                                                 {
-                                                    // Host is "localhost" or contains a dot (e.g., "example.com"). Valid absolute URL.
+                                                    // Host is "localhost" or contains a dot. Valid absolute URL.
                                                     finalImageUrl = uri.ToString();
                                                 }
                                                 else
@@ -80,7 +117,7 @@
                                                     // Assume malformed URL; use its path part.
                                                     if (string.IsNullOrEmpty(uri.AbsolutePath) || uri.AbsolutePath == "/")
                                                     {
-                                                        finalImageUrl = ""; // Path part is empty or root, no valid image
+                                                        finalImageUrl = ""; // Path part is empty or root
                                                     }
                                                     else
                                                     {
@@ -91,7 +128,6 @@
                                             else
                                             {
                                                 // Not an absolute URI with http/https scheme, so treat as a relative path.
-                                                // (This also handles cleanedPath that are just simple paths like "image.jpg" or "folder/image.jpg")
                                                 finalImageUrl = Url.Content("~/" + cleanedPath.TrimStart('/'));
                                             }
                                         }
