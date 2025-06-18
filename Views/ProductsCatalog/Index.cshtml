@@ -1,0 +1,75 @@
+@using EventsService.Controllers // Added for PaginatedList<T>
+@model PaginatedList<EventsService.Models.Product>
+
+@{
+    ViewData["Title"] = "Каталог товаров и услуг";
+}
+
+<h1>@ViewData["Title"]</h1>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info mt-3">
+        В данный момент нет доступных товаров или услуг в каталоге.
+    </div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mt-3">
+        @foreach (var item in Model)
+        {
+            <div class="col">
+                <div class="card h-100">
+                    @* Placeholder for Product Image if you add it later *@
+                    @* <img src="..." class="card-img-top" alt="@item.Name"> *@
+                    <div class="card-body">
+                        <h5 class="card-title">@Html.DisplayFor(modelItem => item.Name)</h5>
+                        <p class="card-text">@Html.DisplayFor(modelItem => item.Description)</p>
+                        <p class="card-text"><strong>Цена:</strong> @item.Price.ToString("C2")</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-top-0">
+                        <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-primary">Подробнее</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* Pagination Controls *@
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            @if (Model.HasPreviousPage)
+            {
+                <li class="page-item">
+                    <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.PageIndex - 1)">Предыдущая</a>
+                </li>
+            }
+            else
+            {
+                <li class="page-item disabled">
+                    <span class="page-link">Предыдущая</span>
+                </li>
+            }
+
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                    <a class="page-link" asp-action="Index" asp-route-pageNumber="@i">@i</a>
+                </li>
+            }
+
+            @if (Model.HasNextPage)
+            {
+                <li class="page-item">
+                    <a class="page-link" asp-action="Index" asp-route-pageNumber="@(Model.PageIndex + 1)">Следующая</a>
+                </li>
+            }
+            else
+            {
+                <li class="page-item disabled">
+                    <span class="page-link">Следующая</span>
+                </li>
+            }
+        </ul>
+    </nav>
+}

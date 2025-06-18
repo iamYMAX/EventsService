@@ -21,6 +21,8 @@ namespace EventsService.Data
         public DbSet<Parameter> Parameters { get; set; }
         public DbSet<Characteristic> Characteristics { get; set; }
         public DbSet<Property> Properties { get; set; }
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -99,6 +101,29 @@ namespace EventsService.Data
                 .WithOne(prop => prop.Product)
                 .HasForeignKey(prop => prop.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Cart and CartItem configurations
+
+            // Client to Cart: One-to-One
+            modelBuilder.Entity<Client>()
+                .HasOne<Cart>()
+                .WithOne(cart => cart.Client)
+                .HasForeignKey<Cart>(cart => cart.ClientId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Cart to CartItems: One Cart has Many CartItems
+            modelBuilder.Entity<Cart>()
+                .HasMany(c => c.Items)
+                .WithOne(ci => ci.Cart)
+                .HasForeignKey(ci => ci.CartId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // CartItem to Product: Many CartItems can reference one Product
+            modelBuilder.Entity<CartItem>()
+                .HasOne(ci => ci.Product)
+                .WithMany()
+                .HasForeignKey(ci => ci.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

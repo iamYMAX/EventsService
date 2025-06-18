@@ -1,0 +1,73 @@
+@model EventsService.Models.Product
+
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<h1>@Html.DisplayFor(model => model.Name)</h1>
+<hr />
+
+<div class="row">
+    <div class="col-md-8">
+        <h4>Описание</h4>
+        <p>@Html.DisplayFor(model => model.Description)</p>
+
+        <h4>Цена: @Model.Price.ToString("C2")</h4>
+
+        @if (Model.Parameters != null && Model.Parameters.Any())
+        {
+            <h5 class="mt-4">Параметры</h5>
+            <ul class="list-group list-group-flush">
+                @foreach (var param in Model.Parameters)
+                {
+                    <li class="list-group-item"><strong>@param.Name:</strong> @param.Value</li>
+                }
+            </ul>
+        }
+
+        @if (Model.Characteristics != null && Model.Characteristics.Any())
+        {
+            <h5 class="mt-4">Характеристики</h5>
+            <ul class="list-group list-group-flush">
+                @foreach (var characteristic in Model.Characteristics)
+                {
+                    <li class="list-group-item"><strong>@characteristic.Name:</strong> @characteristic.Value</li>
+                }
+            </ul>
+        }
+
+        @if (Model.Properties != null && Model.Properties.Any())
+        {
+            <h5 class="mt-4">Свойства</h5>
+            <ul class="list-group list-group-flush">
+                @foreach (var prop in Model.Properties)
+                {
+                    <li class="list-group-item"><strong>@prop.Name:</strong> @prop.Value</li>
+                }
+            </ul>
+        }
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Добавить в корзину</h5>
+                <form asp-controller="Cart" asp-action="AddItem" method="post">
+                    <input type="hidden" name="productId" value="@Model.Id" />
+                    <div class="form-group mb-2">
+                        <label for="quantity">Количество:</label>
+                        <input type="number" name="quantity" value="1" min="1" class="form-control" style="width: 80px;" />
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Добавить в корзину</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a asp-action="Index" class="btn btn-secondary">Назад к каталогу</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

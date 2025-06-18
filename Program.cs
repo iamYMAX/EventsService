@@ -31,6 +31,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<EventsService.Services.ICartService, EventsService.Services.CartService>();
 
 var app = builder.Build();
 
