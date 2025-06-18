@@ -15,7 +15,7 @@
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm border-bottom box-shadow mb-3">
             <div class="container-fluid">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">EventsService</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
@@ -107,13 +107,17 @@
                             </li>
                         }
                     </ul>
-                    <!-- Theme Toggler Button -->
-                    <ul class="navbar-nav">
-                        <li class="nav-item">
-                            <button type="button" class="btn btn-link nav-link" id="themeToggle" title="Toggle light/dark theme">
-                                ☀️/🌙 <span class="d-lg-none ms-2">Тема</span> @* Text for collapsed menu *@
-                            </button>
-                        </li>
+                    <!-- Theme Switcher -->
+                    <ul class="navbar-nav ms-2 me-auto"> <!-- Adjusted for spacing, me-auto might be too much if loginpartial is to its right -->
+                       <li class="nav-item d-flex align-items-center">
+                           <div class="theme-switch-wrapper" title="Переключить тему">
+                               <label class="theme-switch" for="themeSwitchCheckbox">
+                                   <input type="checkbox" id="themeSwitchCheckbox" />
+                                   <div class="slider round"></div>
+                               </label>
+                           </div>
+                           <span class="d-lg-none ms-1">Тема</span>
+                       </li>
                     </ul>
                     <partial name="_LoginPartial" />
                 </div>

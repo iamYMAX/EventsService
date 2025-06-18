@@ -6,7 +6,7 @@
     --body-text-color: #212529;
     --primary-accent-color: #007bff;
     --secondary-accent-color: #6c757d;
-    --section-bg-color: #ffffff;
+    --section-bg-color: rgba(255, 255, 255, 0.9); /* White at 90% opacity */
     --section-border-color: #dee2e6;
     --navbar-bg-color: #ffffff;
     --navbar-text-color: #212529; /* For links/text in navbar */
@@ -21,18 +21,25 @@
     --table-header-bg-color: #e9ecef;
     --table-header-text-color: #212529;
     --table-row-hover-bg-color: #f1f3f5; /* Lighter than default Bootstrap hover */
-    --table-border-color: #dee2e6; /* Added for table borders */
+    /* --table-border-color: #dee2e6; /* Existing - might make it lighter if only using for horizontal lines */
+    --table-row-border-color: #e9ecef; /* New: For subtle horizontal row lines */
+    --table-striped-bg-color: rgba(0, 0, 0, 0.03); /* Slightly more subtle than BS default */
+    --table-cell-padding: 0.75rem 0.9rem; /* Slightly more horizontal padding */
     --link-color: #007bff;
     --link-hover-color: #0056b3;
-    --card-bg-color: #ffffff; /* Added for card background */
+    --card-bg-color: rgba(255, 255, 255, 0.9);    /* White at 90% opacity */
     --card-border-color: rgba(0, 0, 0, 0.125); /* Bootstrap's default card border */
 
     /* Typography Variables */
-    --base-font-size: 1rem; /* Effective base font size */
+    --base-font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --base-font-size: 1rem;
     --base-line-height: 1.6;
     --paragraph-margin-bottom: 1rem;
-    /* --heading-font-family: sans-serif; /* Optional: if different from body */
-    /* --heading-font-weight: 500; /* Bootstrap default is typically fine */
+
+    --heading-font-family: var(--base-font-family); /* Default headings to same as body */
+    --heading-font-weight: 500; /* Bootstrap's default for h1-h4 is often 500, h5-h6 might be normal */
+    --heading-line-height: 1.3;
+    /* We can rely on Bootstrap's responsive heading font sizes for now */
 }
 
 /* Dark Theme Overrides using a data attribute on the body */
@@ -41,7 +48,7 @@ body[data-theme="dark"] {
     --body-text-color: #f8f9fa; /* Light text */
     --primary-accent-color: #3793ff; /* Brighter blue for dark mode */
     --secondary-accent-color: #adb5bd; /* Lighter gray */
-    --section-bg-color: #343a40; /* Darker section background (e.g., cards) */
+    --section-bg-color: rgba(52, 58, 64, 0.85); /* Dark gray #343a40 at 85% opacity */
     --section-border-color: #495057; /* Mid-dark gray for borders */
     --navbar-bg-color: #343a40; /* Dark navbar */
     --navbar-text-color: #f8f9fa; /* Light navbar text */
@@ -56,10 +63,13 @@ body[data-theme="dark"] {
     --table-header-bg-color: #454d55; /* Darker table header */
     --table-header-text-color: #f8f9fa; /* Light table header text */
     --table-row-hover-bg-color: #3f464d; /* Slightly lighter dark gray for hover */
-    --table-border-color: #495057;
+    /* --table-border-color: #495057; /* Existing */
+    --table-row-border-color: #454d55; /* New: Darker subtle row lines */
+    --table-striped-bg-color: rgba(255, 255, 255, 0.04); /* Subtle striping for dark */
+    /* --table-cell-padding doesn't need a dark theme override unless spacing changes */
     --link-color: #3793ff;
     --link-hover-color: #69adff; /* Lighter blue for hover */
-    --card-bg-color: #343a40;
+    --card-bg-color: rgba(52, 58, 64, 0.85);    /* Dark gray #343a40 at 85% opacity */
     --card-border-color: #495057;
 
     /* Specific overrides for Bootstrap components in dark mode if needed */
@@ -73,7 +83,7 @@ body[data-theme="dark"] {
 body {
     background-color: var(--body-bg-color);
     color: var(--body-text-color);
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; /* Bootstrap 5 default stack */
+    font-family: var(--base-font-family);
     font-size: var(--base-font-size);
     line-height: var(--base-line-height);
     margin-bottom: 60px;
@@ -101,10 +111,15 @@ p {
 
 h1, h2, h3, h4, h5, h6 {
     color: var(--body-text-color);
-    /* Other heading properties like font-weight, margin-top, margin-bottom
-       are generally well-handled by Bootstrap defaults. We can add overrides
-       for --heading-font-family or --heading-font-weight here if those vars are defined and used. */
+    font-family: var(--heading-font-family);
+    font-weight: var(--heading-font-weight);
+    line-height: var(--heading-line-height);
+    margin-top: 1.5rem; /* Consistent top margin */
+    margin-bottom: 0.75rem; /* Consistent bottom margin */
 }
+/* Specific heading font sizes will still be largely controlled by Bootstrap's defaults,
+   which are responsive. We are mainly ensuring color, family, weight, and line height here.
+*/
 
 /* Component Styling with CSS Variables */
 
@@ -151,35 +166,60 @@ body[data-theme="dark"] .navbar-toggler-icon {
 /* Ensure .card-body text color uses --body-text-color (usually by default) */
 
 
-/* Tables */
+/* Tables - Refined Styling */
 .table {
-    border-color: var(--table-border-color);
-    /* Text color will inherit or can be set if needed */
+    /* Remove overall table border for a cleaner look, rely on row borders */
+    border: none;
+    width: 100%; /* Ensure it takes full width */
+    margin-bottom: var(--paragraph-margin-bottom); /* Consistent spacing */
 }
-.table th, .table td {
-    border-color: var(--table-border-color); /* For inner borders */
+
+.table th,
+.table td {
+    padding: var(--table-cell-padding);
+    vertical-align: top;
+    border-top: 1px solid var(--table-row-border-color); /* Horizontal lines above each row */
+    border-bottom: none; /* Remove default bottom */
+    border-left: none;   /* Remove vertical borders */
+    border-right: none;  /* Remove vertical borders */
 }
+
 .table thead th {
     background-color: var(--table-header-bg-color);
     color: var(--table-header-text-color);
-    border-bottom-width: 2px; /* Bootstrap default, ensure border color is themed */
+    border-top: none; /* No top border for header cells */
+    border-bottom: 2px solid var(--table-row-border-color); /* Stronger line below header */
+    vertical-align: bottom;
+    text-align: left; /* Ensure headers are left-aligned by default */
 }
+
+/* First row cells don't need a top border if header has a bottom border */
+.table tbody tr:first-child td {
+    border-top: none;
+}
+
 .table-hover tbody tr:hover {
     background-color: var(--table-row-hover-bg-color);
-    /* Ensure text color has enough contrast on hover, may need a specific variable if default is not good */
+    color: var(--body-text-color); /* Ensure text color contrasts with hover bg */
 }
-body[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
-    /* Bootstrap's striped table in dark mode often needs explicit override */
-    background-color: rgba(255, 255, 255, 0.03); /* Very subtle striping for dark */
+
+/* Striped tables */
+.table-striped > tbody > tr:nth-of-type(odd) > * { /* Use > * to target td/th directly if they exist in tbody */
+    background-color: var(--table-striped-bg-color);
+    color: var(--body-text-color); /* Ensure text color contrasts */
+}
+
+/* Dark theme specific overrides for table text (if not inheriting correctly) */
+body[data-theme="dark"] .table {
     color: var(--body-text-color);
 }
-body[data-theme="dark"] .table {
-    color: var(--body-text-color); /* Ensure table text is light in dark mode */
-}
-body[data-theme="dark"] .table th,
-body[data-theme="dark"] .table td {
-    border-color: var(--table-border-color);
-}
+/* The specific border for striped table in dark mode was already:
+   body[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) > * {
+       background-color: rgba(255, 255, 255, 0.03);
+       color: var(--body-text-color);
+   }
+   This is now controlled by --table-striped-bg-color in the dark theme variables.
+*/
 
 
 /* Form Controls */
@@ -250,3 +290,174 @@ html {
 }
 
 /* body rule already merged above */
+
+/* Theme Switcher Styles */
+.theme-switch-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+.theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 46px; /* Adjusted width */
+    height: 24px; /* Adjusted height */
+    margin-bottom: 0; /* Align with other navbar items */
+}
+
+.theme-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc; /* Default track color for light mode */
+    transition: .4s;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px; /* Adjusted thumb size */
+    width: 18px;  /* Adjusted thumb size */
+    left: 3px;    /* Adjusted thumb position */
+    bottom: 3px;  /* Adjusted thumb position */
+    background-color: white;
+    transition: .4s;
+}
+
+input:checked + .slider {
+    background-color: var(--primary-accent-color); /* Use theme's primary accent */
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px var(--primary-accent-color);
+}
+
+input:checked + .slider:before {
+    transform: translateX(22px); /* Adjusted translation */
+}
+
+/* Rounded sliders */
+.slider.round {
+    border-radius: 24px; /* Adjusted for height */
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* Dark theme adjustments for the switch itself */
+body[data-theme="dark"] .slider {
+    background-color: #555; /* Darker track for dark mode */
+}
+
+body[data-theme="dark"] input:checked + .slider {
+    background-color: var(--primary-accent-color); /* Primary accent should already be dark-mode aware */
+}
+
+body[data-theme="dark"] .slider:before {
+     background-color: #ddd; /* Lighter thumb for dark mode if base is dark */
+}
+
+/* Calendar Styling (FullCalendar Theming) */
+
+#orderCalendar {
+    /* Ensure calendar container itself doesn't have conflicting background/border */
+    /* border: 1px solid var(--section-border-color); */ /* Optional: border around calendar */
+}
+
+/* Header Toolbar */
+.fc-header-toolbar {
+    margin-bottom: 1.5em !important; /* Ensure proper spacing */
+    /* Buttons within toolbar are .fc-button, which are Bootstrap .btn if using bootstrap theme,
+       or can be styled directly. Assume standard .fc-button for now. */
+}
+
+.fc-header-toolbar .fc-button {
+    background-color: var(--button-secondary-bg-color) !important; /* Use secondary for nav buttons */
+    color: var(--button-secondary-text-color) !important;
+    border: 1px solid var(--secondary-accent-color) !important; /* Or a slightly different border */
+    text-transform: capitalize; /* Nicer button text */
+    box-shadow: none !important; /* Remove FullCalendar default shadows if any */
+}
+.fc-header-toolbar .fc-button:hover {
+    /* Define hover, potentially using slightly adjusted variable colors if created */
+    /* For now, rely on slight opacity change or default hover */
+}
+.fc-header-toolbar .fc-button-primary { /* 'today' button often gets this */
+    background-color: var(--button-primary-bg-color) !important;
+    color: var(--button-primary-text-color) !important;
+    border-color: var(--primary-accent-color) !important;
+}
+.fc-header-toolbar .fc-toolbar-title {
+    color: var(--body-text-color);
+}
+
+/* Day Headers (e.g., Mon, Tue, for month/week view) */
+.fc .fc-col-header-cell-cushion { /* Link inside day header */
+    color: var(--body-text-color);
+    text-decoration: none;
+}
+
+/* Day Grid Cells */
+.fc-daygrid-day {
+    border-color: var(--section-border-color);
+}
+.fc-day-today { /* Highlight for 'today' */
+    background-color: var(--primary-accent-color) !important;
+    opacity: 0.15; /* Make it a subtle highlight */
+}
+body[data-theme="dark"] .fc-day-today {
+    background-color: var(--primary-accent-color) !important;
+    opacity: 0.25; /* Dark mode today highlight */
+}
+.fc-daygrid-day.fc-day-other .fc-daygrid-day-top a { /* Dim numbers for days in other months */
+    color: var(--secondary-accent-color);
+    opacity: 0.7;
+}
+body[data-theme="dark"] .fc-daygrid-day.fc-day-other .fc-daygrid-day-top a {
+    color: var(--secondary-accent-color);
+    opacity: 0.5;
+}
+
+/* Event Elements */
+.fc-event {
+    background-color: var(--primary-accent-color) !important;
+    border: 1px solid var(--primary-accent-color) !important;
+    color: var(--button-primary-text-color) !important; /* Assuming primary button text color is good for contrast */
+    padding: 2px 4px;
+    font-size: 0.85em;
+}
+.fc-event:hover {
+    /* Slightly change background on hover if desired */
+}
+.fc-event .fc-event-title {
+    color: var(--button-primary-text-color) !important;
+}
+
+/* List View (if used, e.g., listWeek) */
+.fc-list-day th, /* Day headers in list view */
+.fc-list-event-dot { /* Dot next to event */
+    border-color: var(--section-border-color) !important;
+}
+.fc-list-event:hover td { /* Hover over list item row */
+    background-color: var(--table-row-hover-bg-color) !important;
+}
+
+/* General border colors within calendar parts like timegrid */
+.fc-theme-standard td, .fc-theme-standard th { /* Applied by FullCalendar for its standard theme */
+    border-color: var(--section-border-color);
+}
+
+/* Remove box-shadow from table cells in calendar - fc-theme-standard adds it */
+.fc-theme-standard .fc-scrollgrid {
+    border: 1px solid var(--section-border-color); /* Overall border for the grid */
+}

@@ -3,55 +3,52 @@
 
 // Write your JavaScript code.
 
-// site.js - Theme Toggler Logic
+// site.js - Theme Toggler Logic (Updated for Checkbox Switch)
 
 (function () {
-    const themeToggleBtn = document.getElementById('themeToggle');
-    const currentTheme = localStorage.getItem('theme');
-    const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)');
+    const themeSwitchCheckbox = document.getElementById('themeSwitchCheckbox');
+    // const currentTheme = localStorage.getItem('theme'); // Already defined if keeping structure
+    // const prefersDarkScheme = window.matchMedia('(prefers-color-scheme: dark)'); // Already defined
 
-    // Function to apply the theme
-    function applyTheme(theme) {
+    // Function to apply the theme to the body and set checkbox state
+    function applyThemeAndToggleState(theme) {
         if (theme === 'dark') {
             document.body.setAttribute('data-theme', 'dark');
+            if (themeSwitchCheckbox) themeSwitchCheckbox.checked = true;
         } else {
             document.body.removeAttribute('data-theme');
+            if (themeSwitchCheckbox) themeSwitchCheckbox.checked = false;
         }
-        // Optionally, update the button text/icon here if you want to show only one icon (sun or moon)
-        // For example: themeToggleBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
     }
 
-    // Apply stored theme or preferred scheme on initial load
-    if (currentTheme) {
-        applyTheme(currentTheme);
-    } else if (prefersDarkScheme.matches) {
-        applyTheme('dark');
-        // No localStorage.setItem here, so it only applies if no explicit choice was made
-    } else {
-        applyTheme('light'); // Default to light if no preference and no stored theme
+    // Determine initial theme (keep existing logic for this part but use new apply function)
+    let initialTheme = 'light'; // Default
+    const storedTheme = localStorage.getItem('theme');
+    const osPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (storedTheme) {
+        initialTheme = storedTheme;
+    } else if (osPrefersDark) {
+        initialTheme = 'dark';
     }
+    applyThemeAndToggleState(initialTheme); // Apply it and set checkbox
 
 
-    if (themeToggleBtn) {
-        themeToggleBtn.addEventListener('click', function () {
-            let theme = 'light'; // Default to light if switching from dark or no theme
-            if (!document.body.hasAttribute('data-theme') || document.body.getAttribute('data-theme') === 'light') {
-                // If current is light (or no attribute), switch to dark
-                theme = 'dark';
-            }
-            // else if current is dark, it will switch to light (as theme is already 'light' by default)
-
-            applyTheme(theme);
-            localStorage.setItem('theme', theme);
+    // Event Listener for the new checkbox switch
+    if (themeSwitchCheckbox) {
+        themeSwitchCheckbox.addEventListener('change', function(event) {
+            const newTheme = event.target.checked ? 'dark' : 'light';
+            applyThemeAndToggleState(newTheme);
+            localStorage.setItem('theme', newTheme);
         });
     }
 
-    // Optional: Listen for changes in OS theme preference
-    prefersDarkScheme.addEventListener('change', function(e) {
+    // Optional: Listen for changes in OS theme preference (keep existing logic for this)
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
         const storedTheme = localStorage.getItem('theme');
         if (!storedTheme) { // Only apply OS preference if user hasn't made an explicit choice
-            applyTheme(e.matches ? 'dark' : 'light');
+            applyThemeAndToggleState(e.matches ? 'dark' : 'light');
         }
     });
 
-})(); // IIFE to encapsulate the logic
+})(); // IIFE
