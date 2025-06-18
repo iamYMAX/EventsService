@@ -51,33 +51,49 @@
                             <div class="card h-100">
                                 @{
                                     string imagePathValue = Model.ExistingImages[i].ImagePath;
-                                    string finalImageUrl = ""; // Default to empty string if path is null/empty
+                                    string finalImageUrl = ""; // Default to empty
 
                                     if (!string.IsNullOrEmpty(imagePathValue))
                                     {
                                         string cleanedPath = imagePathValue.Replace('\\', '/');
-                                        Uri uri = null;
 
-                                        // Try to create as an absolute URI first.
-                                        if (Uri.TryCreate(cleanedPath, UriKind.Absolute, out uri) && uri != null && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+                                        if (string.IsNullOrEmpty(cleanedPath) || cleanedPath == "/")
                                         {
-                                            // It's an absolute URI with http or https scheme
-                                            if (string.Equals(uri.Host, "94a97e3a-010e-46fb-a12d-f0e2f05f8c1b_1682408706_mur-mur-top-p-mesyats-rebenku-otkritki-devochke-instagra-52.jpg", StringComparison.OrdinalIgnoreCase) && uri.Port == 1)
-                                            {
-                                                // Specific malformed URL: use its path component, ensuring it's app-relative
-                                                finalImageUrl = Url.Content("~/" + uri.AbsolutePath.TrimStart('/'));
-                                            }
-                                            else
-                                            {
-                                                // Other valid absolute URI: use it as is
-                                                finalImageUrl = uri.ToString();
-                                            }
+                                            finalImageUrl = ""; // Path is empty or just a slash, no valid image
                                         }
                                         else
                                         {
-                                            // Not an absolute URI with http/https scheme, so treat as a relative path
-                                            // (This also covers cases where TryCreate with UriKind.Absolute fails, implying it's relative, or if it's an absolute URI with a different scheme like 'file://')
-                                            finalImageUrl = Url.Content("~/" + cleanedPath.TrimStart('/'));
+                                            Uri uri = null;
+                                            if (Uri.TryCreate(cleanedPath, UriKind.Absolute, out uri) &&
+                                                uri != null &&
+                                                (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+                                            {
+                                                // It's an absolute URI with http or https scheme
+                                                if (string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase) || uri.Host.Contains("."))
+                                                {
+                                                    // Host is "localhost" or contains a dot (e.g., "example.com"). Valid absolute URL.
+                                                    finalImageUrl = uri.ToString();
+                                                }
+                                                else
+                                                {
+                                                    // Host is a single segment (e.g., "uploads", "guid-filename") and not "localhost".
+                                                    // Assume malformed URL; use its path part.
+                                                    if (string.IsNullOrEmpty(uri.AbsolutePath) || uri.AbsolutePath == "/")
+                                                    {
+                                                        finalImageUrl = ""; // Path part is empty or root, no valid image
+                                                    }
+                                                    else
+                                                    {
+                                                        finalImageUrl = Url.Content("~/" + uri.AbsolutePath.TrimStart('/'));
+                                                    }
+                                                }
+                                            }
+                                            else
+                                            {
+                                                // Not an absolute URI with http/https scheme, so treat as a relative path.
+                                                // (This also handles cleanedPath that are just simple paths like "image.jpg" or "folder/image.jpg")
+                                                finalImageUrl = Url.Content("~/" + cleanedPath.TrimStart('/'));
+                                            }
                                         }
                                     }
                                 }
